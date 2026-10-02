@@ -3,6 +3,24 @@
 Passo a passo para cada carrossel. Junta três guias: `produto.md` (o que é verdade
 sobre o Cria Aí!), `fai.md` (voz e uso da FAÍ) e as regras de carrossel abaixo.
 
+
+## 0. Linha editorial (definida pela Brenda)
+
+Fugir de tema batido: "5 prompts que você precisa testar", "3 erros ao usar IA",
+"como fazer vídeos com IA". Todo mundo já faz.
+
+Cada carrossel ensina **um raciocínio que muda a forma como a pessoa cria** e,
+no caminho, ela percebe sozinha por que um banco de prompts bem construído tem
+valor. O Cria Aí! aparece como sistema que ajuda a pensar antes de criar, não
+como depósito de textos. Sem apelar pra viral, dinheiro ou promessa de venda:
+autoridade vem de entregar algo aplicável na hora.
+
+Exemplos de linha certa: "A IA não errou, você deixou espaço demais pra ela
+decidir" · "Pare de transformar uma imagem boa em cinco medianas" · "Bonito não
+basta se o produto virou primo do original" · "Às vezes a melhor geração é a que
+você não faz" · "Seu vídeo não precisa fazer 12 coisas em 8 segundos" · "Copiar
+um prompt é fácil. Saber qual usar é outra história."
+
 ## 1. Antes de qualquer design: 4 respostas
 
 Carrossel bom começa na mensagem, não no design. Responder por escrito antes de
