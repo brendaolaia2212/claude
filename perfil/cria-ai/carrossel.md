@@ -156,3 +156,6 @@ agregando, preço/número confirmados no site, marcas citadas só como uso). Mai
   pacote tem 1 carrossel fixo de NOVIDADES (o que entrou de novo no banco),
   feito a partir do print da tela "Atualizações" que a Brenda manda. Sem o print,
   não inventar novidade: trocar por outro tema.
+- **Link:** o link do Cria Aí! fica sempre na bio. Último slide leva "link na
+  bio" discreto e toda legenda termina com uma linha avisando que o link está na
+  bio (sem virar pedido gritado).
