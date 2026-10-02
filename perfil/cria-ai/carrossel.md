@@ -56,6 +56,15 @@ slides.
 - 1080x1350 (4:5). Texto longe das bordas (120 px de cada lado).
 - Azul profundo, faísca laranja ✦ com moderação, órbita, respiro. Quiet luxury
   tecnológico, editorial premium.
+- Paleta oficial (`marca/cores-e-fontes.png`): Azul Petróleo #041A3B · Azul
+  Profundo #0A224D · Laranja Destaque #F36A21 · Laranja Queimado #D9772B · Off
+  White #F6F1E7 · Cinza Claro #D9D6CF.
+- Fontes oficiais: **Cormorant Garamond** (título) · **Manrope** (corpo) ·
+  **Archivo** (apoio).
+- Assinatura da marca: "Cria aí! ideias que orbitam, marcas que permanecem."
+- Arquivos em `marca/`: logo (fundo transparente), FAÍ corpo inteiro, FAÍ
+  apontando para baixo (boa pra slide que mostra algo abaixo), FAÍ pensando com
+  painel (boa pra explicar/diagnosticar).
 - Número do slide (3/8) e a marca discreta em todo slide.
 - Letra nunca menor que 32 px.
 
