@@ -73,7 +73,16 @@ slides.
   - `fai-pensando-painel.png` (painel holográfico): explicar, analisar, estratégia.
   - `fai-acenando.png`: boas-vindas, primeiro post, fechamento.
   - `fai-corpo-inteiro.png`: capa, marca, apresentação da FAÍ.
-- `logo.png`: logo com fundo transparente.
+  - `fai-indicador.png` (dedo pra cima, mão na cintura): dica, regra, "um detalhe".
+  - `fai-comemorando.png` (punhos pra cima): "deu certo", novidade. Usar pouco
+    (energia alta, só em campanha/lançamento ou celebração real).
+  - `fai-avatar-orbital.png` (rosto dentro da órbita): assinatura, selo da FAÍ
+    falando, foto de perfil.
+- `logo.png`: logo completo (símbolo + "Cria aí"), fundo transparente.
+- `simbolo-raposa-orbital.png`: só o símbolo (raposa formando o C, com órbita e
+  faísca). Bom pra marca discreta no canto dos slides.
+- `referencia-conheca-a-fai.png`: peça oficial de referência de layout (fundo
+  azul, órbita laranja, título em Cormorant, FAÍ apresentando).
 - Número do slide (3/8) e a marca discreta em todo slide.
 - Letra nunca menor que 32 px.
 
