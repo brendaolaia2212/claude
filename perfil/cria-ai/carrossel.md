@@ -103,3 +103,13 @@ agregando, preço/número confirmados no site, marcas citadas só como uso). Mai
 - [ ] As 4 respostas estão claras?
 - [ ] O número de slides combina com o tipo de ideia?
 - [ ] Algum slide enrola? Se sim, cortar.
+
+## 7. Ritmo combinado com a Brenda
+
+- **Pacote semanal:** 7 carrosséis por semana (um por dia), cada um com legenda.
+- Primeiro os temas e textos da semana pra ela aprovar; depois as imagens.
+- Ela agenda tudo de uma vez pelo próprio Instagram (Programar) ou pelo Meta
+  Business Suite. Nós não postamos por ela.
+- Variar os pilares ao longo da semana (produto, educação, FAÍ, demonstração,
+  problemas, novidades...) e mostrar o produto real (prints de dentro do Cria Aí!)
+  sempre que possível.
