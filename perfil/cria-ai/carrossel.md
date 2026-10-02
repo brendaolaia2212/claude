@@ -104,6 +104,27 @@ slides.
 - Número do slide (3/8) e a marca discreta em todo slide.
 - Letra nunca menor que 32 px.
 
+
+## Regra de imagem: só a FAÍ, nunca o rosto da Brenda
+
+O Cria Aí! está sendo desvinculado da Brenda pessoal. **Nenhum carrossel usa foto
+ou rosto da Brenda.** Onde as referências mostram uma pessoa, entra a FAÍ (ou um
+print/mockup do produto). Pessoas só aparecem quando são exemplos reais de cards
+do banco (prints da plataforma).
+
+## Referência de estilo (`marca/referencia-estilo-1.png`, `-2`, `-3`)
+
+Usar como inspiração visual, não copiar à risca:
+- Mais elementos por slide: mockup de celular com a tela do Cria Aí!, cards de
+  vidro, ícones laranja, checklists, etiquetas, setas, botão redondo com seta.
+- Título grande com palavra de destaque em laranja; numeração "Passo 1" quando
+  for sequência.
+- Alternar fundos: azul petróleo, off-white (papel) e laranja.
+- FAÍ grande e integrada à cena, não um selo pequeno.
+- **Os textos das referências NÃO valem:** comissões em R$, "mais vendas",
+  "liberdade financeira", "a IA trabalha 24h por você", "renda extra" quebram as
+  regras do produto. Só o visual serve.
+
 ## 5. Entrega
 
 1. As 4 respostas + o texto slide a slide numa lista curta, pra Brenda aprovar.
