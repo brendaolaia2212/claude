@@ -62,9 +62,18 @@ slides.
 - Fontes oficiais: **Cormorant Garamond** (título) · **Manrope** (corpo) ·
   **Archivo** (apoio).
 - Assinatura da marca: "Cria aí! ideias que orbitam, marcas que permanecem."
-- Arquivos em `marca/`: logo (fundo transparente), FAÍ corpo inteiro, FAÍ
-  apontando para baixo (boa pra slide que mostra algo abaixo), FAÍ pensando com
-  painel (boa pra explicar/diagnosticar).
+- Fundos oficiais (`marca/fundos-e-texturas.png`): azul petróleo plano · azul
+  petróleo gradiente suave · textura de tecido sutil · textura premium com brilho
+  suave (laranja + órbita) · papel premium off-white · azul para preto refinado.
+- Arquivos da FAÍ em `marca/` (fundo transparente) e quando usar cada pose:
+  - `fai-apontando.png` (dedo para baixo): slide que mostra algo abaixo dela.
+  - `fai-indicador-e-mao-aberta.png` (dedo pra cima): dica, insight, "olha isso".
+  - `fai-apresentando.png` (mão estendida): apresentar o produto, um card, o caminho.
+  - `fai-pensando.png` (mão no queixo): pergunta, dúvida comum, diagnóstico.
+  - `fai-pensando-painel.png` (painel holográfico): explicar, analisar, estratégia.
+  - `fai-acenando.png`: boas-vindas, primeiro post, fechamento.
+  - `fai-corpo-inteiro.png`: capa, marca, apresentação da FAÍ.
+- `logo.png`: logo com fundo transparente.
 - Número do slide (3/8) e a marca discreta em todo slide.
 - Letra nunca menor que 32 px.
 
