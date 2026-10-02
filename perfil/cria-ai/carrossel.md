@@ -113,3 +113,7 @@ agregando, preço/número confirmados no site, marcas citadas só como uso). Mai
 - Variar os pilares ao longo da semana (produto, educação, FAÍ, demonstração,
   problemas, novidades...) e mostrar o produto real (prints de dentro do Cria Aí!)
   sempre que possível.
+- **Novidades da semana:** o Cria Aí! recebe atualizações toda semana. Todo
+  pacote tem 1 carrossel fixo de NOVIDADES (o que entrou de novo no banco),
+  feito a partir do print da tela "Atualizações" que a Brenda manda. Sem o print,
+  não inventar novidade: trocar por outro tema.
