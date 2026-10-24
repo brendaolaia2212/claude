@@ -8,7 +8,9 @@ Os anexos chegam com nomes aleatórios: copie cada um pro nome abaixo antes de r
   04..08_farol_*.png   prints das fotos do Farol
   09_pib_logo.jpg      símbolo da PIB Guarapari (barquinho no fundo azul)
   10_pib_igreja_insta.png  print do Instagram da PIB com a igreja cheia (vira recortes/pib.jpg)
-Opcionais (entram no lugar das iniciais): recortes/danilo.jpg, recortes/nina.jpg
+  11_casal_loja_insta.png  print do Danilo e da Nina na loja (vira recortes/casal_loja.jpg)
+  12_casal_praia_insta.png print da selfie dos dois na praia (vira recortes/casal_praia.jpg)
+Sem as fotos do casal, a cena volta pros cartões com as iniciais.
 """
 import shutil
 import sys
@@ -16,7 +18,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
 from marca import PASTA
 
@@ -32,8 +34,11 @@ CORTES = {
     "07_farol_19set.png": (0, 930, 1320, 1938),
     "01_tapete_insta.png": (0, 509, 1320, 1828),
     "10_pib_igreja_insta.png": (0, 790, 1320, 1525),   # sem o "65 anos" e o coração de baixo
+    "11_casal_loja_insta.png": (0, 510, 1320, 1943),   # ROSTO_LOJA (montagem.py) usa este recorte
+    "12_casal_praia_insta.png": (0, 510, 1320, 2160),
 }
-SAIDA = {"10_pib_igreja_insta.png": "pib.jpg"}          # nome que a montagem procura
+SAIDA = {"10_pib_igreja_insta.png": "pib.jpg",           # nomes que a montagem procura
+         "11_casal_loja_insta.png": "casal_loja_bruto.jpg", "12_casal_praia_insta.png": "casal_praia_bruto.jpg"}
 
 
 def recortar_prints():
@@ -51,6 +56,19 @@ def recortar_prints():
                 [cv2.IMWRITE_JPEG_QUALITY, 95])
     # tapete: corta a borda direita (onde ficavam o "1/7" e o ícone de som)
     Image.open(RECORTES / "01_tapete_insta.jpg").crop((0, 0, 1150, 1319)).save(RECORTES / "01_tapete.jpg", quality=95)
+    # casal na loja: a câmera chega perto dos rostos, então um pouco de nitidez ajuda
+    if (RECORTES / "casal_loja_bruto.jpg").exists():
+        Image.open(RECORTES / "casal_loja_bruto.jpg").filter(ImageFilter.UnsharpMask(radius=2, percent=60, threshold=2)).save(
+            RECORTES / "casal_loja.jpg", quality=95)
+    # selfie: cobre o ícone de "pessoas marcadas" com o tecido da camiseta logo ao lado
+    if (RECORTES / "casal_praia_bruto.jpg").exists():
+        img = Image.open(RECORTES / "casal_praia_bruto.jpg").convert("RGB")
+        cx, cy, r = 81, 1569, 52
+        pedaco = img.crop((215 - 70, cy - 70, 215 + 70, cy + 70))
+        mascara = Image.new("L", (140, 140), 0)
+        ImageDraw.Draw(mascara).ellipse([70 - r, 70 - r, 70 + r, 70 + r], fill=255)
+        img.paste(pedaco, (cx - 70, cy - 70), mascara.filter(ImageFilter.GaussianBlur(9)))
+        img.save(RECORTES / "casal_praia.jpg", quality=95)
 
 
 def extrair_logo():

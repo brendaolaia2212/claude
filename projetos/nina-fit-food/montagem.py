@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 import musica
-from marca import (selo_pib, BRANCO, ESCURO, FPS, H, LILAS, PASTA, PRETO, ROXO, ROXO_CAIXA, ROXO_ESC, ROXO_VIVO,
+from marca import (selo_pib, CREME, BRANCO, ESCURO, FPS, H, LILAS, PASTA, PRETO, ROXO, ROXO_CAIXA, ROXO_ESC, ROXO_VIVO,
                    VERDE, VERDE_CLARO, W, Particulas, balao, brilho, carimbo, cartao_nome, cartao_perfil,
                    colar, coracao, ease_back, ease_in, ease_in_out, ease_out, emoji, folha, fonte, fundo_roxo,
                    icone_camera, igreja, farol, lim, logo, mola, palavra, pilula, polaroid, recortar, rgba, sombra)
@@ -343,29 +343,51 @@ def cena_casal_chegou(t0):
     t1 = Texto([("Ano passado,", F_SCRIPT, VERDE_CLARO, 0)], 470)
     t2 = Texto([("um casal chegou", F_TXT, BRANCO, 0), ("pra fazer parte do", F_TXT, BRANCO, 0),
                 ("nosso grupo", F_TXT, BRANCO, 0)], 760)
+    t_enc = 1.25          # os dois corações se encontram
 
     def desenhar(tl, _):
         tela = base_roxa(t0 + tl)
         t1.desenhar(tela, tl, 0.0, passo=0.1)
-        t2.desenhar(tela, tl, 0.35, passo=0.06)
-        p = ease_in_out((tl - 0.5) / 1.0)
-        enc = tl > 1.5
+        t2.desenhar(tela, tl, 0.3, passo=0.055)
+        p = ease_in_out((tl - 0.35) / (t_enc - 0.35))
+        enc = tl > t_enc
         for lado, cor in ((-1, LILAS), (1, VERDE_CLARO)):
-            x = 540 + lado * (520 - 440 * p) + (0 if not enc else lado * 0)
+            x = 540 + lado * (520 - 440 * p)
             y = 1290 - 40 * math.sin(p * math.pi)
-            e = 1.0 + (0.12 * math.sin((tl - 1.5) * 10) * math.exp(-(tl - 1.5) * 4) if enc else 0)
-            colar(tela, coracao(150, cor), x, y, e, lim((tl - 0.4) / 0.2), giro=-lado * 12 * (1 - p))
+            e = 1.0 + (0.12 * math.sin((tl - t_enc) * 10) * math.exp(-(tl - t_enc) * 4) if enc else 0)
+            colar(tela, coracao(150, cor), x, y, e, lim((tl - 0.3) / 0.2), giro=-lado * 12 * (1 - p))
         if enc:
             for i in range(6):
                 a = 2 * math.pi * i / 6
-                d = 60 + 160 * ease_out((tl - 1.5) / 0.5)
+                d = 60 + 160 * ease_out((tl - t_enc) / 0.5)
                 colar(tela, brilho(54), 540 + d * math.cos(a), 1290 + d * math.sin(a), 1.0,
-                      lim(1 - (tl - 1.7) / 0.5))
+                      lim(1 - (tl - t_enc - 0.2) / 0.5))
         return tela
     return desenhar
 
 
-def cena_danilo_nina(t0):
+# rostos na foto da loja (coordenadas do recorte): centro x, centro y, largura do rosto
+ROSTO_LOJA = {"danilo": (491, 333, 189), "nina": (654, 463, 159)}
+
+
+def janela_camera(foto_rgb, cx, cy, s, jw, jh):
+    """O que uma 'câmera' com centro (cx, cy) e zoom s vê da foto, no tamanho da janela."""
+    w, h = jw / s, jh / s
+    x0 = min(max(cx - w / 2, 0), foto_rgb.width - w)
+    y0 = min(max(cy - h / 2, 0), foto_rgb.height - h)
+    return foto_rgb.resize((jw, jh), Image.LANCZOS, box=(x0, y0, x0 + w, y0 + h)), (x0, y0)
+
+
+def holofote(img, fx, fy, r, escuro=0.5, suave=110):
+    """Escurece tudo fora do círculo do rosto em foco."""
+    a = np.asarray(img).astype(np.float32)
+    yy, xx = np.ogrid[0:img.height, 0:img.width]
+    k = 1 - escuro * np.clip((np.sqrt((xx - fx) ** 2 + (yy - fy) ** 2) - r) / suave, 0, 1)
+    return Image.fromarray((a * k[..., None]).clip(0, 255).astype(np.uint8))
+
+
+def _cena_cartoes(t0):
+    """Sem as fotos do casal: cartões com as iniciais."""
     f_d = FOTOS / "danilo.jpg"
     f_n = FOTOS / "nina.jpg"
     c_d = cartao_nome("Danilo", "D", 410, giro=6, foto=foto("danilo.jpg") if f_d.exists() else None)
@@ -385,6 +407,71 @@ def cena_danilo_nina(t0):
             q = tl - 1.5
             colar(tela, coracao(130, ROXO_VIVO), 545, 930, 0.3 + 0.7 * ease_back(q / 0.35), lim(q / 0.1))
             colar(tela, coracao(96, LILAS), 545, 930, 0.3 + 0.7 * ease_back(q / 0.35), lim(q / 0.1))
+        return tela
+    return desenhar
+
+
+def cena_danilo_nina(t0):
+    """'Ele se chama Danilo' (câmera no rosto dele), 'e ela, Nina' (câmera desliza até ela),
+    depois a selfie dos dois cai por cima."""
+    if not ((FOTOS / "casal_loja.jpg").exists() and (FOTOS / "casal_praia.jpg").exists()):
+        return _cena_cartoes(t0)
+    loja = foto("casal_loja.jpg")
+    JW, JH, BORDA, BASE = 752, 820, 24, 120
+    vazio = Image.new("RGBA", (JW + 2 * BORDA, JH + BORDA + BASE), rgba(CREME))
+    moldura = sombra(vazio, 18, (0, 14), 130)
+    m = 18 * 2 + 14                               # onde o cartão começa dentro da imagem com sombra
+    f_nome = fonte("caveat", 92, 700)
+    nomes = {k: recortar(palavra(k, f_nome, ROXO)) for k in ("Danilo", "Nina")}
+    cam = {}
+    for quem, s in (("danilo", 1.7), ("nina", 1.9)):
+        fx, fy, fw = ROSTO_LOJA[quem]
+        cam[quem] = (fx, fy + 0.06 * JH / s, s)
+    t1 = Texto([("Ele se chama", F_TXT2, BRANCO, 0)], 330)
+    t2 = Texto([("e ela,", F_TXT2, BRANCO, 0)], 330)
+    praia = foto("casal_praia.jpg")
+    selfie = polaroid(praia, 728, 850, base=110, legenda="Danilo e Nina", f_legenda=fonte("caveat", 84, 700))
+    T_PAN, D_PAN, T_SELFIE = 1.0, 0.35, 2.05
+    cor_e = Coracoes(6, T_SELFIE + 0.05, T_SELFIE + 0.7, area=(125, 200, 1150, 1450), semente=21, tam=(48, 84))
+    cor_d = Coracoes(6, T_SELFIE + 0.05, T_SELFIE + 0.7, area=(880, 955, 1150, 1450), semente=22, tam=(48, 84))
+
+    def camera(tl):
+        """Centro, zoom e rosto em foco (fx, fy, largura) no tempo tl."""
+        p = ease_in_out((tl - T_PAN) / D_PAN)
+        a, b = cam["danilo"], cam["nina"]
+        ra, rb = ROSTO_LOJA["danilo"], ROSTO_LOJA["nina"]
+        empurra = 1 + 0.04 * (tl if p <= 0 else max(0.0, tl - T_PAN - D_PAN))
+        s = (a[2] * 1.04 + (b[2] - a[2] * 1.04) * p) if 0 < p < 1 else (a[2] if p <= 0 else b[2])
+        s *= empurra if (p <= 0 or p >= 1) else 1
+        cx, cy = a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p
+        rosto = tuple(ra[i] + (rb[i] - ra[i]) * p for i in range(3))
+        return cx, cy, s, rosto
+
+    def desenhar(tl, _):
+        tela = base_roxa(t0 + tl)
+        t1.desenhar(tela, tl, 0.0, t_out=0.95)
+        t2.desenhar(tela, tl, 1.12, t_out=T_SELFIE - 0.1)
+        cx, cy, s, (fx, fy, fw) = camera(tl)
+        vista, (x0, y0) = janela_camera(loja, cx, cy, s, JW, JH)
+        foco = 1 - ease_in((tl - T_SELFIE) / 0.3)          # o holofote some quando a selfie chega
+        if foco > 0.01:
+            vista = holofote(vista, (fx - x0) * s, (fy - y0) * s, fw * s * 0.72, 0.5 * foco)
+        card = moldura.copy()
+        card.paste(vista, (m + BORDA, m + BORDA))
+        yl = m + BORDA + JH + BASE / 2 - 4
+        q1 = (tl - 0.25) / 0.3
+        colar(card, nomes["Danilo"], card.width / 2, yl, 0.7 + 0.3 * ease_back(q1),
+              lim(q1 * 3) * lim((T_PAN + 0.12 - tl) / 0.12))
+        q2 = (tl - T_PAN - 0.3) / 0.3
+        colar(card, nomes["Nina"], card.width / 2, yl, 0.7 + 0.3 * ease_back(q2), lim(q2 * 3))
+        p = ease_out(tl / 0.3)
+        colar(tela, card, 540, 960 + 50 * (1 - p), 1.1 - 0.1 * p, lim(tl / 0.12), giro=-1.5)
+        q = tl - T_SELFIE
+        if q > 0:
+            p = ease_out(q / 0.3)
+            colar(tela, selfie, 540, 985 - 50 * (1 - p), 1.3 - 0.3 * p, lim(q / 0.1), giro=-3 + 11 * (1 - p))
+            cor_e.desenhar(tela, tl, vida=1.0)
+            cor_d.desenhar(tela, tl, vida=1.0)
         return tela
     return desenhar
 
@@ -699,8 +786,8 @@ def montar_linha():
     cena(cena_grupo, 3.0)
     cena(cena_farol, 2.0)
     cena(cena_fotos_farol, 2.5)
-    cena(cena_casal_chegou, 2.5)
-    cena(cena_danilo_nina, 2.5)
+    cena(cena_casal_chegou, 2.0)
+    cena(cena_danilo_nina, 3.0)
     cena(cena_logo, 2.0)
     t_loja = t
     cena(cena_loja, 1.0, Video(LOJA, 1.00, 1.0, zoom=(1.0, 1.06), foco=(540, 600)))
@@ -963,8 +1050,8 @@ def sons_da_montagem(marcos):
     ]
     b4 = ANCORA + 7.0
     s += [(b4, "whoosh", -18)] + [(b4 + 0.12 + 0.36 * k, "obturador", -17) for k in range(5)]
-    s += [(ANCORA + 9.5, "whoosh", -18), (ANCORA + 11.0, "pop", -16), (ANCORA + 12.0, "whoosh", -18),
-          (ANCORA + 12.12, "swish", -18), (ANCORA + 12.97, "swish", -18), (ANCORA + 13.5, "pop", -15),
+    s += [(ANCORA + 9.5, "whoosh", -18), (ANCORA + 10.75, "pop", -16), (ANCORA + 11.5, "whoosh", -18),
+          (ANCORA + 12.55, "swish", -18), (ANCORA + 13.57, "obturador", -15),
           (ANCORA + 14.5, "whoosh", -18), (ANCORA + 15.0, "brilho", -15),
           (marcos["loja"], "whoosh", -18), (marcos["loja"] + 0.25, "pop", -18),
           (ANCORA + 18.5, "whoosh", -18), (ANCORA + 20.5, "obturador", -16), (ANCORA + 22.0, "whoosh", -18),
@@ -987,7 +1074,7 @@ def sons_da_montagem(marcos):
 def transicoes(marcos):
     """(tempo do corte, tipo)."""
     tr = [(0.60, "flash"), (ANCORA, "iris")]
-    cortes_historia = [ANCORA + x for x in (2.0, 5.0, 7.0, 9.5, 12.0, 14.5, 16.5, 17.5, 18.5, 20.5, 22.0, 23.5)]
+    cortes_historia = [ANCORA + x for x in (2.0, 5.0, 7.0, 9.5, 11.5, 14.5, 16.5, 17.5, 18.5, 20.5, 22.0, 23.5)]
     tr += [(c, "chicote") for c in cortes_historia]
     R = marcos["reacts"]
     tr += [(R, "flash"), (R + 3.5, "chicote"), (R + 6.5, "flash"), (R + 7.5, "flash"), (R + 8.5, "flash"),

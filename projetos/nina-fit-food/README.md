@@ -10,7 +10,7 @@ e chamada pro @ninafitfood. Só o código fica aqui; vídeos e fotos ficam fora 
 2. `bash projetos/nina-fit-food/prep_hd.sh` (1080x1920 em `trabalho/nina/hd/`, áudio em `proxy/`) e
    `python projetos/nina-fit-food/transcrever_pasta.py trabalho/nina/proxy large-v3`
    sobre os áudios em 16 kHz (`proxy/IMG_*.wav`); a montagem lê `proxy/<vídeo>.large-v3.json`.
-3. Pedir pra Brenda mandar de novo as fotos (logo, cidade, prints do Farol, símbolo e foto da PIB).
+3. Pedir pra Brenda mandar de novo as fotos (logo, cidade, prints do Farol, símbolo e foto da PIB, fotos do casal).
    De dentro desta pasta:
    `python preparar_fotos.py <pasta com as fotos>`.
 4. Ainda desta pasta: `python montagem.py --saida ../../trabalho/nina/final.mp4` (uns 3 minutos).
@@ -20,8 +20,9 @@ Conferências: `python quadros_teste.py folha.jpg 1.5 12 40` (quadros soltos) e 
 
 ## O que dá pra trocar fácil
 
-- Fotos do Danilo e da Nina: salve como `trabalho/nina/fotos/recortes/danilo.jpg` e `nina.jpg`.
-  A cena troca as iniciais pela foto sozinha.
+- Danilo e Nina: a câmera passa pelo rosto de cada um na foto da loja (`recortes/casal_loja.jpg`; as posições
+  dos rostos ficam em `ROSTO_LOJA`) e depois a selfie dos dois (`recortes/casal_praia.jpg`) cai por cima.
+  Sem essas fotos, voltam os cartões com as iniciais.
 - PIB: o símbolo (`fotos/09_pib_logo.jpg`) vira um selo com o barquinho balançando, e a foto da igreja cheia
   (`recortes/pib.jpg`) entra no "por ser uma igreja grande". Sem esses arquivos, volta o desenho da igreja.
 - Textos da história: funções `cena_*` em `montagem.py`.
