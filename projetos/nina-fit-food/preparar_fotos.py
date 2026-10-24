@@ -6,7 +6,9 @@ Os anexos chegam com nomes aleatórios: copie cada um pro nome abaixo antes de r
   02_logo.jpg          foto do logo (fundo roxo)
   03_guarapari.jpg     foto da cidade
   04..08_farol_*.png   prints das fotos do Farol
-Opcionais (entram no lugar das iniciais/desenho): recortes/danilo.jpg, recortes/nina.jpg, recortes/pib.jpg
+  09_pib_logo.jpg      símbolo da PIB Guarapari (barquinho no fundo azul)
+  10_pib_igreja_insta.png  print do Instagram da PIB com a igreja cheia (vira recortes/pib.jpg)
+Opcionais (entram no lugar das iniciais): recortes/danilo.jpg, recortes/nina.jpg
 """
 import shutil
 import sys
@@ -29,13 +31,18 @@ CORTES = {
     "08_farol_restaurante.png": (0, 552, 1320, 2312),
     "07_farol_19set.png": (0, 930, 1320, 1938),
     "01_tapete_insta.png": (0, 509, 1320, 1828),
+    "10_pib_igreja_insta.png": (0, 790, 1320, 1525),   # sem o "65 anos" e o coração de baixo
 }
+SAIDA = {"10_pib_igreja_insta.png": "pib.jpg"}          # nome que a montagem procura
 
 
 def recortar_prints():
     RECORTES.mkdir(parents=True, exist_ok=True)
     for arq, caixa in CORTES.items():
-        Image.open(FOTOS / arq).convert("RGB").crop(caixa).save(RECORTES / arq.replace(".png", ".jpg"), quality=95)
+        if not (FOTOS / arq).exists():
+            continue
+        nome = SAIDA.get(arq, arq.replace(".png", ".jpg"))
+        Image.open(FOTOS / arq).convert("RGB").crop(caixa).save(RECORTES / nome, quality=95)
     # tira o "1/3" do Instagram de cima da foto do sofá
     img = cv2.imread(str(RECORTES / "05_farol_sofa.jpg"))
     mascara = np.zeros(img.shape[:2], np.uint8)

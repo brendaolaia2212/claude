@@ -10,7 +10,8 @@ e chamada pro @ninafitfood. Só o código fica aqui; vídeos e fotos ficam fora 
 2. `bash projetos/nina-fit-food/prep_hd.sh` (1080x1920 em `trabalho/nina/hd/`, áudio em `proxy/`) e
    `python projetos/nina-fit-food/transcrever_pasta.py trabalho/nina/proxy large-v3`
    sobre os áudios em 16 kHz (`proxy/IMG_*.wav`); a montagem lê `proxy/<vídeo>.large-v3.json`.
-3. Pedir pra Brenda mandar de novo as fotos (logo, cidade, prints do Farol). De dentro desta pasta:
+3. Pedir pra Brenda mandar de novo as fotos (logo, cidade, prints do Farol, símbolo e foto da PIB).
+   De dentro desta pasta:
    `python preparar_fotos.py <pasta com as fotos>`.
 4. Ainda desta pasta: `python montagem.py --saida ../../trabalho/nina/final.mp4` (uns 3 minutos).
 
@@ -19,8 +20,10 @@ Conferências: `python quadros_teste.py folha.jpg 1.5 12 40` (quadros soltos) e 
 
 ## O que dá pra trocar fácil
 
-- Fotos da PIB, do Danilo e da Nina: salve como `trabalho/nina/fotos/recortes/pib.jpg`, `danilo.jpg`, `nina.jpg`.
-  A cena troca o desenho/iniciais pela foto sozinha.
+- Fotos do Danilo e da Nina: salve como `trabalho/nina/fotos/recortes/danilo.jpg` e `nina.jpg`.
+  A cena troca as iniciais pela foto sozinha.
+- PIB: o símbolo (`fotos/09_pib_logo.jpg`) vira um selo com o barquinho balançando, e a foto da igreja cheia
+  (`recortes/pib.jpg`) entra no "por ser uma igreja grande". Sem esses arquivos, volta o desenho da igreja.
 - Textos da história: funções `cena_*` em `montagem.py`.
 - Cortes das reações: `montar_linha()` (fonte, ponto de entrada, duração).
 - Trilha: `musica.py` gera uma música original (sem direitos autorais) no ritmo dos cortes; o volume por trecho

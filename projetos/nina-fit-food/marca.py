@@ -503,3 +503,46 @@ class Particulas:
             y = (f["y"] + f["v"] * t) % (H + 300) - 150
             x = f["x"] + 40 * math.sin(t * 0.8 + f["fase"])
             colar(tela, folha(f["tam"], VERDE, f["alfa"]), x, y, giro=f["giro0"] + f["vg"] * t)
+
+
+@lru_cache(maxsize=2)
+def _pib_partes(diam):
+    """Símbolo da PIB Guarapari (barquinho branco) separado do fundo azul, e o fundo em degradê redondo."""
+    im = Image.open(PASTA / "fotos" / "09_pib_logo.jpg").convert("RGB")
+    a = np.asarray(im).astype(np.float32)
+    alfa = np.clip((a.min(axis=2) - 90) / 110, 0, 1)
+    barco = Image.new("RGBA", im.size, (255, 255, 255, 0))
+    barco.putalpha(Image.fromarray((alfa * 255).astype(np.uint8)))
+    caixa = barco.getchannel("A").getbbox()
+    cx_rel = ((caixa[0] + caixa[2]) / 2 - im.width / 2) / im.width
+    cy_rel = ((caixa[1] + caixa[3]) / 2 - im.height / 2) / im.height
+    barco = barco.crop(caixa)
+    e = diam / im.width
+    barco = barco.resize((int(barco.width * e), int(barco.height * e)), Image.LANCZOS)
+    k = 3
+    D = diam * k
+    x = np.linspace(0, 1, D)[None, :, None]
+    ini, fim_ = np.array((4, 4, 16)), np.array((58, 54, 205))
+    cor = (ini + (fim_ - ini) * x ** 0.9) * np.ones((D, 1, 1))
+    mascara = Image.new("L", (D, D), 0)
+    ImageDraw.Draw(mascara).ellipse([0, 0, D - 1, D - 1], fill=255)
+    fundo = Image.fromarray(np.dstack([cor, np.asarray(mascara)]).astype(np.uint8), "RGBA").resize((diam, diam), Image.LANCZOS)
+    return fundo, barco, (cx_rel * diam, cy_rel * diam)
+
+
+def selo_pib(giro=0.0, diam=440):
+    """Selo redondo da PIB com o barquinho balançando (giro em graus)."""
+    fundo, barco, (dx, dy) = _pib_partes(diam)
+    borda = 10
+    im = Image.new("RGBA", (diam + 2 * borda, diam + 2 * borda), (0, 0, 0, 0))
+    ImageDraw.Draw(im).ellipse([0, 0, im.width - 1, im.height - 1], fill=rgba(BRANCO))
+    im.alpha_composite(fundo, (borda, borda))
+    b = barco.rotate(giro, expand=True, resample=Image.BICUBIC) if abs(giro) > 0.05 else barco
+    camada = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    camada.alpha_composite(b, (int(im.width / 2 + dx - b.width / 2), int(im.height / 2 + dy - b.height / 2)))
+    corte = Image.new("L", im.size, 0)
+    ImageDraw.Draw(corte).ellipse([borda, borda, borda + diam - 1, borda + diam - 1], fill=255)
+    from PIL import ImageChops
+    camada.putalpha(ImageChops.multiply(camada.getchannel("A"), corte))
+    im.alpha_composite(camada)
+    return sombra(im, 22, (0, 14), 130)

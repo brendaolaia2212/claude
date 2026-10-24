@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 import musica
-from marca import (BRANCO, ESCURO, FPS, H, LILAS, PASTA, PRETO, ROXO, ROXO_CAIXA, ROXO_ESC, ROXO_VIVO,
+from marca import (selo_pib, BRANCO, ESCURO, FPS, H, LILAS, PASTA, PRETO, ROXO, ROXO_CAIXA, ROXO_ESC, ROXO_VIVO,
                    VERDE, VERDE_CLARO, W, Particulas, balao, brilho, carimbo, cartao_nome, cartao_perfil,
                    colar, coracao, ease_back, ease_in, ease_in_out, ease_out, emoji, folha, fonte, fundo_roxo,
                    icone_camera, igreja, farol, lim, logo, mola, palavra, pilula, polaroid, recortar, rgba, sombra)
@@ -229,20 +229,21 @@ def base_roxa(t_abs):
 def cena_pib(t0):
     t1 = Texto([("Somos membros da", F_TXT, BRANCO, 0)], 420)
     t2 = Texto([("PIB GUARAPARI", F_GRANDE, BRANCO, 0)], 1340, espaco=34)
-    foto_pib = FOTOS / "pib.jpg"
-    pol = polaroid(foto("pib.jpg"), 760, 560) if foto_pib.exists() else None
+    tem_logo = (PASTA / "fotos" / "09_pib_logo.jpg").exists()
 
     def desenhar(tl, _):
         tela = base_roxa(t0 + tl)
-        if pol is not None:
-            p = ease_back(tl / 0.5)
-            colar(tela, pol, 540, 880, 0.8 + 0.2 * p, lim(tl / 0.25), giro=-3 * p)
+        if tem_logo:     # símbolo da PIB com o barquinho balançando
+            p = ease_back(tl / 0.45, 2.2)
+            giro = 4.5 * math.sin(2 * math.pi * tl / 1.5)
+            colar(tela, selo_pib(giro, 440), 540, 860 + 10 * math.sin(2 * math.pi * tl / 1.5 + 1.2),
+                  0.5 + 0.5 * p, lim(tl / 0.12))
         else:
             colar(tela, igreja(ease_in_out((tl - 0.05) / 1.5), 600), 540, 860)
-        t1.desenhar(tela, tl, 0.15)
-        t2.desenhar(tela, tl, 0.55, passo=0.12)
-        if tl > 1.0:
-            p = ease_out((tl - 1.0) / 0.4)
+        t1.desenhar(tela, tl, 0.1)
+        t2.desenhar(tela, tl, 0.45, passo=0.12)
+        if tl > 0.85:
+            p = ease_out((tl - 0.85) / 0.4)
             dr = ImageDraw.Draw(tela)
             dr.rounded_rectangle([540 - 330 * p, 1440, 540 + 330 * p, 1452], 6, fill=rgba(VERDE))
         return tela
@@ -250,26 +251,47 @@ def cena_pib(t0):
 
 
 def cena_grupo(t0):
-    t1 = Texto([("Por ser uma igreja grande,", F_TXT2, BRANCO, 0),
-                ("nos unimos em um", F_TXT2, BRANCO, 0)], 720)
-    t2 = Texto([("pequeno grupo", F_SCRIPT, VERDE_CLARO, 0)], 960)
-    ig = igreja(1.0, 300)
+    tem_foto = (FOTOS / "pib.jpg").exists()
+    if not tem_foto:
+        t1 = Texto([("Por ser uma igreja grande,", F_TXT2, BRANCO, 0),
+                    ("nos unimos em um", F_TXT2, BRANCO, 0)], 720)
+        t2 = Texto([("pequeno grupo", F_SCRIPT, VERDE_CLARO, 0)], 960)
+        ig = igreja(1.0, 300)
+    else:            # a igreja cheia (foto da PIB) ilustra o "igreja grande"
+        t1 = Texto([("Por ser uma igreja grande,", F_TXT2, BRANCO, 0)], 300)
+        t3 = Texto([("nos unimos em um", F_TXT2, BRANCO, 0)], 1175)
+        t2 = Texto([("pequeno grupo", F_SCRIPT, VERDE_CLARO, 0)], 1315)
+        im = foto("pib.jpg")
+        pol = polaroid(im, 930, int(882 * im.height / im.width), base=56)
 
     def desenhar(tl, _):
         tela = base_roxa(t0 + tl)
-        colar(tela, ig, 540, 380, 0.9 + 0.1 * ease_out(tl / 0.5), 0.55 * lim(tl / 0.3))
-        t1.desenhar(tela, tl, 0.05, passo=0.06)
-        t2.desenhar(tela, tl, 0.85, passo=0.15)
-        # pontinhos que se juntam: o grupo se formando
+        if not tem_foto:
+            colar(tela, ig, 540, 380, 0.9 + 0.1 * ease_out(tl / 0.5), 0.55 * lim(tl / 0.3))
+            t1.desenhar(tela, tl, 0.05, passo=0.06)
+            t2.desenhar(tela, tl, 0.85, passo=0.15)
+            y_grupo, tam, rx, ry = 1330, 46, 120, 60
+        else:
+            t1.desenhar(tela, tl, 0.0, passo=0.06)
+            q = tl - 0.1
+            if q > 0:
+                p = ease_out(q / 0.4)
+                colar(tela, pol, 540, 745 + 70 * (1 - p), 1.12 - 0.12 * p + 0.025 * q, lim(q / 0.12),
+                      giro=-2.5 + 7 * (1 - p))
+            t3.desenhar(tela, tl, 1.0, passo=0.07)
+            t2.desenhar(tela, tl, 1.35, passo=0.15)
+            y_grupo, tam, rx, ry = 1455, 38, 105, 30
+        # coraçõezinhos que se juntam: o grupo se formando
         r = np.random.default_rng(5)
-        p = ease_in_out((tl - 0.9) / 1.2)
+        t_g = 0.9 if not tem_foto else 1.6
+        p = ease_in_out((tl - t_g) / 1.1)
         for i in range(14):
             ang = 2 * math.pi * i / 14
-            x0, y0 = 540 + r.uniform(-420, 420), 1330 + r.uniform(-170, 170)
-            x1, y1 = 540 + 120 * math.cos(ang), 1330 + 60 * math.sin(ang)
+            x0, y0 = 540 + r.uniform(-420, 420), y_grupo + r.uniform(-170, 170) * (1 if not tem_foto else 0.35)
+            x1, y1 = 540 + rx * math.cos(ang), y_grupo + ry * math.sin(ang)
             x, y = x0 + (x1 - x0) * p, y0 + (y1 - y0) * p
             c = [LILAS, VERDE_CLARO, BRANCO][i % 3]
-            colar(tela, coracao(46, c), x, y, 1.0, lim((tl - 0.6) / 0.3) * 0.95)
+            colar(tela, coracao(tam, c), x, y, 1.0, lim((tl - t_g + 0.3) / 0.3) * 0.95)
         return tela
     return desenhar
 
@@ -673,8 +695,8 @@ def montar_linha():
     video("IMG_6490", 18.00, 1.96, voz=True, legenda=True, y_leg=1000, zoom=(1.05, 1.0), foco=(540, 700))
     assert abs(t - ANCORA) < 0.01, t
     # ---------------- história ----------------
-    cena(cena_pib, 2.5)
-    cena(cena_grupo, 2.5)
+    cena(cena_pib, 2.0)
+    cena(cena_grupo, 3.0)
     cena(cena_farol, 2.0)
     cena(cena_fotos_farol, 2.5)
     cena(cena_casal_chegou, 2.5)
@@ -936,8 +958,8 @@ def sons_da_montagem(marcos):
         (0.0, "whoosh", -14), (0.55, "pop", -16), (5.62, "shh", -16),
         (7.0, "pop", -18), (7.35, "pop", -18), (7.7, "pop", -18), (9.95, "whoosh", -18),
         # história
-        (ANCORA, "whoosh_sobe", -16), (ANCORA + 0.6, "rabisco", -22),
-        (ANCORA + 2.5, "whoosh", -18), (ANCORA + 5.0, "whoosh", -18), (ANCORA + 5.45, "brilho", -20),
+        (ANCORA, "whoosh_sobe", -16),
+        (ANCORA + 2.0, "whoosh", -18), (ANCORA + 2.12, "obturador", -16), (ANCORA + 5.0, "whoosh", -18), (ANCORA + 5.45, "brilho", -20),
     ]
     b4 = ANCORA + 7.0
     s += [(b4, "whoosh", -18)] + [(b4 + 0.12 + 0.36 * k, "obturador", -17) for k in range(5)]
@@ -965,7 +987,7 @@ def sons_da_montagem(marcos):
 def transicoes(marcos):
     """(tempo do corte, tipo)."""
     tr = [(0.60, "flash"), (ANCORA, "iris")]
-    cortes_historia = [ANCORA + x for x in (2.5, 5.0, 7.0, 9.5, 12.0, 14.5, 16.5, 17.5, 18.5, 20.5, 22.0, 23.5)]
+    cortes_historia = [ANCORA + x for x in (2.0, 5.0, 7.0, 9.5, 12.0, 14.5, 16.5, 17.5, 18.5, 20.5, 22.0, 23.5)]
     tr += [(c, "chicote") for c in cortes_historia]
     R = marcos["reacts"]
     tr += [(R, "flash"), (R + 3.5, "chicote"), (R + 6.5, "flash"), (R + 7.5, "flash"), (R + 8.5, "flash"),
