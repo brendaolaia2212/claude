@@ -1,32 +1,33 @@
-"""Confere se alguma camada (texto, emoji, cartão) cobre olhos e boca. Usa os rostos detectados na linha do tempo."""
-import json
+"""Confere se alguma camada por cima do vídeo (legenda, emoji, número da reação, carimbo, cartão do perfil) cobre
+olhos e boca de alguém. Passa pela linha do tempo a cada 0,2 s com os rostos de rostos.py.
+Os trechos desenhados da história ficam de fora (lá o texto faz parte da cena). Uso: python conferir_rostos.py
+"""
 import numpy as np
 from PIL import Image
-import montagem as M
-from marca import PASTA, W, H
 
-rostos = json.load(open(PASTA / "rostos_linha.json"))
-trechos, audios, leg, marcos = M.montar_linha()
-itens = M.camadas(marcos)
-ocultar = [(0.0, 2.95), (marcos["bolo"], marcos["bolo"] + 2.0)]
+import montagem as M
+from marca import W, H
+
+L = M.montar_linha()
+itens = M.camadas(L)
 problemas = []
-for r in rostos:
-    t = r["t"]
-    caixas = [c for c in r["caixas"] if (c[2] - c[0]) > 120 and c[1] < 1500]   # ignora detecções pequenas/falsas
+for t in np.arange(0.0, L.marcos["fim"], 0.2):
+    obj, t0 = M.objeto_em(L, t)
+    if isinstance(obj, M.Cena):
+        continue
+    caixas = [c for c in obj.rostos(t - t0) if c[2] - c[0] > 120]   # rosto pequeno lá no fundo não conta
     if not caixas:
         continue
-    for dt in (0.0, 0.1, 0.2):
-        tt = t + dt
-        tela = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        for f in itens:
-            f(tela, tt)
-        leg.desenhar(tela, tt, ocultar)
-        a = np.asarray(tela.getchannel("A")) > 60
-        for x0, y0, x1, y1 in caixas:
-            x0, y0 = max(0, x0), max(0, y0)
-            sub = a[y0:y1, x0:x1]
-            if sub.size and sub.mean() > 0.03:
-                problemas.append((round(tt, 2), r["fonte"], [x0, y0, x1, y1], round(float(sub.mean()), 3)))
+    tela = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    for f in itens:
+        f(tela, t)
+    L.leg.desenhar(tela, t)
+    a = np.asarray(tela.getchannel("A")) > 60
+    for x0, y0, x1, y1 in caixas:
+        sub = a[max(0, int(y0)):max(0, int(y1)), max(0, int(x0)):max(0, int(x1))]
+        if sub.size and sub.mean() > 0.03:
+            problemas.append((round(float(t), 2), obj.nome, [int(v) for v in (x0, y0, x1, y1)], round(float(sub.mean()), 3)))
+M.rostos.salvar()
 for p in problemas:
     print(p)
 print("total", len(problemas))

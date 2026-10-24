@@ -1,33 +1,29 @@
-"""Renderiza quadros soltos da montagem (pra conferir sem gerar o vídeo todo)."""
+"""Renderiza quadros soltos da montagem (pra conferir sem gerar o vídeo todo).
+Uso: python quadros_teste.py saida.jpg t1 t2 ..."""
 import sys
-from PIL import Image
+
+from PIL import Image, ImageDraw
+
 import montagem as M
 
 tempos = [float(x) for x in sys.argv[2:]]
-trechos, audios, leg, marcos = M.montar_linha()
-itens = M.camadas(marcos)
-tr = M.transicoes(marcos)
-ocultar = [(0.0, 2.95), (marcos["bolo"], marcos["bolo"] + 2.0)]
+L = M.montar_linha()
+itens = M.camadas(L)
 imgs = []
 for t in tempos:
-    idx = max(i for i, (t0, _) in enumerate(trechos) if t0 <= t + 1e-6)
-    t0, obj = trechos[idx]
+    obj, t0 = M.objeto_em(L, t)
     obj.abrir()
-    tela = obj.quadro(t - t0)
+    tela = M.quadro(L, itens, t, {})
     obj.fechar()
-    for f in itens:
-        f(tela, t)
-    leg.desenhar(tela, t, ocultar)
-    tela = M.aplicar_transicao(tela, t, tr, {})
     imgs.append(tela.convert("RGB").resize((360, 640)))
+M.rostos.salvar()
 cols = min(6, len(imgs))
 linhas = (len(imgs) + cols - 1) // cols
 folha = Image.new("RGB", (cols * 360, linhas * 664), "white")
-from PIL import ImageDraw
 d = ImageDraw.Draw(folha)
 for k, (im, t) in enumerate(zip(imgs, tempos)):
     x, y = (k % cols) * 360, (k // cols) * 664
     folha.paste(im, (x, y + 24))
     d.text((x + 6, y + 4), f"{t:.2f}s", fill="black")
 folha.save(sys.argv[1], quality=88)
-print(sys.argv[1], marcos)
+print(sys.argv[1])

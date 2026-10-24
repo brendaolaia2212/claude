@@ -1,10 +1,13 @@
-"""Vídeo da Nina Fit Food: abertura falada, história com fotos, reações e chamada pro Instagram.
+"""Vídeo da Nina Fit Food: abertura da Brenda, a história narrada com fotos, a reação de cada irmão que provou
+o bolo e a chamada pro Instagram.
 
-Uso: python montagem.py [--ate SEG] [--de SEG] [--rapido] [--saida arquivo.mp4]
+Uso: python montagem.py [--de SEG] [--ate SEG] [--rapido] [--saida arquivo.mp4]
+Precisa de: hd/ (clipes em 1080x1920), proxy/ (áudio 16 kHz + transcrições), fotos/, narracao/ (narracao.py).
 """
 import argparse
 import json
 import math
+import re
 import subprocess
 import wave
 
@@ -12,10 +15,14 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 import musica
-from marca import (selo_pib, CREME, BRANCO, ESCURO, FPS, H, LILAS, PASTA, PRETO, ROXO, ROXO_CAIXA, ROXO_ESC, ROXO_VIVO,
-                   VERDE, VERDE_CLARO, W, Particulas, balao, brilho, carimbo, cartao_nome, cartao_perfil,
-                   colar, coracao, ease_back, ease_in, ease_in_out, ease_out, emoji, folha, fonte, fundo_roxo,
-                   icone_camera, igreja, farol, lim, logo, mola, palavra, pilula, polaroid, recortar, rgba, sombra)
+import narracao
+import roteiro
+import rostos
+from legendas import legendas
+from marca import (BRANCO, CREME, ESCURO, FPS, H, LILAS, PASTA, ROXO, ROXO_CAIXA, ROXO_ESC, ROXO_VIVO, VERDE,
+                   VERDE_CLARO, W, Particulas, brilho, carimbo, cartao_perfil, colar, coracao, ease_back, ease_in,
+                   ease_in_out, ease_out, emoji, farol, fonte, fundo_roxo, icone_camera, lim, logo, mola, palavra,
+                   pilula, polaroid, recortar, rgba, selo_pib, sombra)
 
 HD = PASTA / "hd"
 FOTOS = PASTA / "fotos" / "recortes"
@@ -27,59 +34,13 @@ def hd(nome):
     return str(HD / f"{nome}.mov")
 
 
+def quadro_inteiro(t):
+    return round(t * FPS) / FPS
+
+
 # =====================================================================
-# Linha do tempo (tempos de saída em segundos)
+# O que aparece: trechos de vídeo e cenas desenhadas
 # =====================================================================
-
-ANCORA = 10.22          # início da história = tempo forte da música
-FIM_CTA = 68.22         # cartão final começa aqui (acorde final)
-DURACAO = 70.72
-
-
-class Video:
-    """Trecho de vídeo: fonte, ponto de entrada, duração e movimento de câmera."""
-
-    def __init__(self, nome, ini, dur, zoom=(1.0, 1.0), foco=(540, 760), congelar=None, socos=(),
-                 tremer=(), rapido=None):
-        self.arq, self.ini, self.dur = hd(nome), ini, dur
-        self.zoom, self.foco, self.congelar = zoom, foco, congelar
-        self.socos, self.tremer = socos, tremer
-        self.leitor = None
-
-    def abrir(self):
-        dur_fonte = self.dur if self.congelar is None else min(self.dur, self.congelar + 0.1)
-        self.leitor = Leitor(self.arq, self.ini, dur_fonte)
-
-    def fechar(self):
-        if self.leitor:
-            self.leitor.fechar()
-            self.leitor = None
-
-    def quadro(self, tl):
-        if self.leitor is None:
-            self.abrir()
-        tq = tl if self.congelar is None else min(tl, self.congelar)
-        img = self.leitor.quadro(int(round(tq * FPS)))
-        z = self.zoom[0] + (self.zoom[1] - self.zoom[0]) * ease_in_out(tl / self.dur)
-        for ts in self.socos:
-            d = tl - ts
-            if d >= 0:
-                z += 0.07 * min(1.0, d / 0.07) * math.exp(-max(0.0, d - 0.07) * 3.0)
-        dx = dy = 0.0
-        for ts, amp in self.tremer:
-            d = tl - ts
-            if 0 <= d < 0.35:
-                k = amp * (1 - d / 0.35)
-                dx += k * math.sin(d * 97)
-                dy += k * math.cos(d * 83)
-        if abs(z - 1) > 0.002 or dx or dy:
-            cx, cy = self.foco
-            cw, ch = W / z, H / z
-            x0 = min(max(cx - cw / 2 + dx, 0), W - cw)
-            y0 = min(max(cy - ch / 2 + dy, 0), H - ch)
-            img = img.resize((W, H), Image.BILINEAR, box=(x0, y0, x0 + cw, y0 + ch))
-        return img.convert("RGBA")
-
 
 class Leitor:
     def __init__(self, arq, ini, dur):
@@ -102,8 +63,63 @@ class Leitor:
         self.p.wait()
 
 
+class Video:
+    """Trecho de um clipe: ponto de entrada, duração e movimento de câmera (zoom, soco, tremida, congelar)."""
+
+    def __init__(self, nome, ini, dur, zoom=(1.0, 1.0), foco=(540, 760), congelar=None, socos=(), tremer=()):
+        self.nome, self.arq, self.ini, self.dur = nome, hd(nome), ini, dur
+        self.zoom, self.foco, self.congelar = zoom, foco, congelar
+        self.socos, self.tremer = socos, tremer
+        self.leitor = None
+
+    def abrir(self):
+        dur_fonte = self.dur if self.congelar is None else min(self.dur, self.congelar + 0.1)
+        self.leitor = Leitor(self.arq, self.ini, dur_fonte)
+
+    def fechar(self):
+        if self.leitor:
+            self.leitor.fechar()
+            self.leitor = None
+
+    def janela(self, tl):
+        """(x0, y0, largura, altura) do pedaço do quadro que aparece na tela em tl."""
+        z = self.zoom[0] + (self.zoom[1] - self.zoom[0]) * ease_in_out(tl / self.dur)
+        for ts in self.socos:
+            d = tl - ts
+            if d >= 0:
+                z += 0.07 * min(1.0, d / 0.07) * math.exp(-max(0.0, d - 0.07) * 3.0)
+        dx = dy = 0.0
+        for ts, amp in self.tremer:
+            d = tl - ts
+            if 0 <= d < 0.35:
+                k = amp * (1 - d / 0.35)
+                dx += k * math.sin(d * 97)
+                dy += k * math.cos(d * 83)
+        cw, ch = W / z, H / z
+        cx, cy = self.foco
+        return min(max(cx - cw / 2 + dx, 0), W - cw), min(max(cy - ch / 2 + dy, 0), H - ch), cw, ch
+
+    def quadro(self, tl):
+        if self.leitor is None:
+            self.abrir()
+        tq = tl if self.congelar is None else min(tl, self.congelar)
+        img = self.leitor.quadro(int(round(tq * FPS)))
+        x0, y0, cw, ch = self.janela(tl)
+        if abs(cw - W) > 1 or x0 or y0:
+            img = img.resize((W, H), Image.BILINEAR, box=(x0, y0, x0 + cw, y0 + ch))
+        return img.convert("RGBA")
+
+    def rostos(self, tl):
+        """Rostos (olhos até boca) na tela em tl, já com o zoom do trecho."""
+        tq = tl if self.congelar is None else min(tl, self.congelar)
+        x0, y0, cw, ch = self.janela(tl)
+        e = W / cw
+        caixas = rostos.rostos(self.nome, round((self.ini + tq) * 4) / 4)
+        return [((a - x0) * e, (b - y0) * e, (c - x0) * e, (d - y0) * e) for a, b, c, d in caixas]
+
+
 class Cena:
-    """Trecho desenhado (história, cartão final): desenhar(tl) -> imagem RGBA."""
+    """Trecho desenhado (história, cartão final): desenhar(tl, quadro_do_fundo) -> imagem RGBA."""
 
     def __init__(self, desenhar, dur, base=None):
         self.desenhar, self.dur, self.base = desenhar, dur, base
@@ -119,9 +135,12 @@ class Cena:
     def quadro(self, tl):
         return self.desenhar(tl, self.base.quadro(tl) if self.base else None)
 
+    def rostos(self, tl):
+        return self.base.rostos(tl) if self.base else []
+
 
 # =====================================================================
-# Texto animado palavra por palavra
+# Texto que entra palavra por palavra (junto com a narração)
 # =====================================================================
 
 class Texto:
@@ -153,9 +172,11 @@ class Texto:
             y += (base - topo) + gap
         self.n = k
 
-    def desenhar(self, tela, tl, t_in=0.0, t_out=None, passo=0.07, dur=0.38, sobe=46):
+    def desenhar(self, tela, tl, t_in=0.0, t_out=None, passo=0.07, dur=0.38, sobe=46, tempos=None):
+        """tempos: quando cada palavra entra (tempo da cena); sem eles, uma a cada 'passo' depois de t_in."""
         for im, cx, cy, k in self.itens:
-            p = (tl - t_in - k * passo) / dur
+            t0 = tempos[min(k, len(tempos) - 1)] - 0.04 if tempos else t_in + k * passo
+            p = (tl - t0) / dur
             if p <= 0:
                 continue
             a = ease_out(p * 1.4)
@@ -173,24 +194,21 @@ _FAIXAS = {}
 
 def faixa_escura(tela, y0, y1, alfa=150, cor=ROXO_ESC):
     """Faixa em degradê atrás de texto em cima de vídeo."""
+    alfa = int(alfa)
     chave = (int(y0), int(y1), alfa, cor)
-    if chave in _FAIXAS:
-        tela.alpha_composite(_FAIXAS[chave], (0, int(y0)))
-        return
-    h = int(y1 - y0)
-    a = np.zeros((h, 1), np.float32)
-    m = h * 0.25
-    for i in range(h):
-        a[i] = alfa * min(1.0, i / m, (h - 1 - i) / m)
-    camada = np.zeros((h, W, 4), np.uint8)
-    camada[..., :3] = cor
-    camada[..., 3] = a.astype(np.uint8)
-    _FAIXAS[chave] = Image.fromarray(camada, "RGBA")
+    if chave not in _FAIXAS:
+        h = int(y1 - y0)
+        m = h * 0.25
+        a = np.array([alfa * min(1.0, i / m, (h - 1 - i) / m) for i in range(h)], np.float32)[:, None]
+        camada = np.zeros((h, W, 4), np.uint8)
+        camada[..., :3] = cor
+        camada[..., 3] = np.repeat(a, W, axis=1).astype(np.uint8)
+        _FAIXAS[chave] = Image.fromarray(camada, "RGBA")
     tela.alpha_composite(_FAIXAS[chave], (0, int(y0)))
 
 
 # =====================================================================
-# Fotos
+# Fotos e câmera dentro da foto
 # =====================================================================
 
 def foto(nome):
@@ -206,168 +224,6 @@ def recorte_proporcao(im, prop):
     h = int(im.width / prop)
     y0 = (im.height - h) // 2
     return im.crop((0, y0, im.width, y0 + h))
-
-
-# =====================================================================
-# Cenas da história (cada uma recebe tl = tempo local)
-# =====================================================================
-
-PART = Particulas()
-F_TXT = fonte("montserrat", 64, 800)
-F_TXT2 = fonte("montserrat", 58, 800)
-F_GRANDE = fonte("anton", 150)
-F_SCRIPT = fonte("caveat", 128, 700)
-F_SCRIPT_M = fonte("caveat", 104, 700)
-
-
-def base_roxa(t_abs):
-    tela = fundo_roxo().copy()
-    PART.desenhar(tela, t_abs)
-    return tela
-
-
-def cena_pib(t0):
-    t1 = Texto([("Somos membros da", F_TXT, BRANCO, 0)], 420)
-    t2 = Texto([("PIB GUARAPARI", F_GRANDE, BRANCO, 0)], 1340, espaco=34)
-    tem_logo = (PASTA / "fotos" / "09_pib_logo.jpg").exists()
-
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        if tem_logo:     # símbolo da PIB com o barquinho balançando
-            p = ease_back(tl / 0.45, 2.2)
-            giro = 4.5 * math.sin(2 * math.pi * tl / 1.5)
-            colar(tela, selo_pib(giro, 440), 540, 860 + 10 * math.sin(2 * math.pi * tl / 1.5 + 1.2),
-                  0.5 + 0.5 * p, lim(tl / 0.12))
-        else:
-            colar(tela, igreja(ease_in_out((tl - 0.05) / 1.5), 600), 540, 860)
-        t1.desenhar(tela, tl, 0.1)
-        t2.desenhar(tela, tl, 0.45, passo=0.12)
-        if tl > 0.85:
-            p = ease_out((tl - 0.85) / 0.4)
-            dr = ImageDraw.Draw(tela)
-            dr.rounded_rectangle([540 - 330 * p, 1440, 540 + 330 * p, 1452], 6, fill=rgba(VERDE))
-        return tela
-    return desenhar
-
-
-def cena_grupo(t0):
-    tem_foto = (FOTOS / "pib.jpg").exists()
-    if not tem_foto:
-        t1 = Texto([("Por ser uma igreja grande,", F_TXT2, BRANCO, 0),
-                    ("nos unimos em um", F_TXT2, BRANCO, 0)], 720)
-        t2 = Texto([("pequeno grupo", F_SCRIPT, VERDE_CLARO, 0)], 960)
-        ig = igreja(1.0, 300)
-    else:            # a igreja cheia (foto da PIB) ilustra o "igreja grande"
-        t1 = Texto([("Por ser uma igreja grande,", F_TXT2, BRANCO, 0)], 300)
-        t3 = Texto([("nos unimos em um", F_TXT2, BRANCO, 0)], 1175)
-        t2 = Texto([("pequeno grupo", F_SCRIPT, VERDE_CLARO, 0)], 1315)
-        im = foto("pib.jpg")
-        pol = polaroid(im, 930, int(882 * im.height / im.width), base=56)
-
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        if not tem_foto:
-            colar(tela, ig, 540, 380, 0.9 + 0.1 * ease_out(tl / 0.5), 0.55 * lim(tl / 0.3))
-            t1.desenhar(tela, tl, 0.05, passo=0.06)
-            t2.desenhar(tela, tl, 0.85, passo=0.15)
-            y_grupo, tam, rx, ry = 1330, 46, 120, 60
-        else:
-            t1.desenhar(tela, tl, 0.0, passo=0.06)
-            q = tl - 0.1
-            if q > 0:
-                p = ease_out(q / 0.4)
-                colar(tela, pol, 540, 745 + 70 * (1 - p), 1.12 - 0.12 * p + 0.025 * q, lim(q / 0.12),
-                      giro=-2.5 + 7 * (1 - p))
-            t3.desenhar(tela, tl, 1.0, passo=0.07)
-            t2.desenhar(tela, tl, 1.35, passo=0.15)
-            y_grupo, tam, rx, ry = 1455, 38, 105, 30
-        # coraçõezinhos que se juntam: o grupo se formando
-        r = np.random.default_rng(5)
-        t_g = 0.9 if not tem_foto else 1.6
-        p = ease_in_out((tl - t_g) / 1.1)
-        for i in range(14):
-            ang = 2 * math.pi * i / 14
-            x0, y0 = 540 + r.uniform(-420, 420), y_grupo + r.uniform(-170, 170) * (1 if not tem_foto else 0.35)
-            x1, y1 = 540 + rx * math.cos(ang), y_grupo + ry * math.sin(ang)
-            x, y = x0 + (x1 - x0) * p, y0 + (y1 - y0) * p
-            c = [LILAS, VERDE_CLARO, BRANCO][i % 3]
-            colar(tela, coracao(tam, c), x, y, 1.0, lim((tl - t_g + 0.3) / 0.3) * 0.95)
-        return tela
-    return desenhar
-
-
-def cena_farol(t0):
-    t1 = Texto([("que chamamos de", F_TXT, BRANCO, 0)], 330)
-    t2 = Texto([("FAROL", fonte("anton", 200), BRANCO, 0)], 1440, espaco=30)
-
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        p = ease_back(tl / 0.55)
-        colar(tela, farol(tl + 0.8, 560), 540, 860 + 120 * (1 - ease_out(tl / 0.5)), 0.85 + 0.15 * p,
-              lim(tl / 0.25))
-        t1.desenhar(tela, tl, 0.0)
-        t2.desenhar(tela, tl, 0.45, passo=0.08)
-        return tela
-    return desenhar
-
-
-def cena_fotos_farol(t0):
-    specs = [  # (arquivo, proporção, largura, x, y, giro)
-        ("04_farol_ano_novo.jpg", 4 / 3, 640, 330, 640, -7),
-        ("05_farol_sofa_limpa.jpg", 16 / 9, 680, 690, 860, 6),
-        ("06_farol_selfie.jpg", 16 / 10, 680, 360, 1120, 4),
-        ("07_farol_19set.jpg", 4 / 3, 620, 715, 1320, -5),
-        ("08_farol_restaurante.jpg", 3 / 4, 470, 560, 1010, -2),
-    ]
-    pols = []
-    for arq, prop, larg, x, y, g in specs:
-        im = recorte_proporcao(foto(arq), prop)
-        pols.append((polaroid(im, larg, int((larg - 48) / prop), base=70), x, y, g))
-    titulo = Texto([("Nossos encontros", F_SCRIPT_M, BRANCO, 0)], 300)
-
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        titulo.desenhar(tela, tl, 0.0, passo=0.1)
-        for k, (pol, x, y, g) in enumerate(pols):
-            tk = tl - 0.12 - 0.36 * k
-            if tk <= 0:
-                continue
-            p = ease_out(tk / 0.32)
-            e = 1.35 - 0.35 * p
-            colar(tela, pol, x, y - 60 * (1 - p), e, lim(tk / 0.12), giro=g + 10 * (1 - p))
-        return tela
-    return desenhar
-
-
-def cena_casal_chegou(t0):
-    t1 = Texto([("Ano passado,", F_SCRIPT, VERDE_CLARO, 0)], 470)
-    t2 = Texto([("um casal chegou", F_TXT, BRANCO, 0), ("pra fazer parte do", F_TXT, BRANCO, 0),
-                ("nosso grupo", F_TXT, BRANCO, 0)], 760)
-    t_enc = 1.25          # os dois corações se encontram
-
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        t1.desenhar(tela, tl, 0.0, passo=0.1)
-        t2.desenhar(tela, tl, 0.3, passo=0.055)
-        p = ease_in_out((tl - 0.35) / (t_enc - 0.35))
-        enc = tl > t_enc
-        for lado, cor in ((-1, LILAS), (1, VERDE_CLARO)):
-            x = 540 + lado * (520 - 440 * p)
-            y = 1290 - 40 * math.sin(p * math.pi)
-            e = 1.0 + (0.12 * math.sin((tl - t_enc) * 10) * math.exp(-(tl - t_enc) * 4) if enc else 0)
-            colar(tela, coracao(150, cor), x, y, e, lim((tl - 0.3) / 0.2), giro=-lado * 12 * (1 - p))
-        if enc:
-            for i in range(6):
-                a = 2 * math.pi * i / 6
-                d = 60 + 160 * ease_out((tl - t_enc) / 0.5)
-                colar(tela, brilho(54), 540 + d * math.cos(a), 1290 + d * math.sin(a), 1.0,
-                      lim(1 - (tl - t_enc - 0.2) / 0.5))
-        return tela
-    return desenhar
-
-
-# rostos na foto da loja (coordenadas do recorte): centro x, centro y, largura do rosto
-ROSTO_LOJA = {"danilo": (491, 333, 189), "nina": (654, 463, 159)}
 
 
 def janela_camera(foto_rgb, cx, cy, s, jw, jh):
@@ -386,192 +242,24 @@ def holofote(img, fx, fy, r, escuro=0.5, suave=110):
     return Image.fromarray((a * k[..., None]).clip(0, 255).astype(np.uint8))
 
 
-def _cena_cartoes(t0):
-    """Sem as fotos do casal: cartões com as iniciais."""
-    f_d = FOTOS / "danilo.jpg"
-    f_n = FOTOS / "nina.jpg"
-    c_d = cartao_nome("Danilo", "D", 410, giro=6, foto=foto("danilo.jpg") if f_d.exists() else None)
-    c_n = cartao_nome("Nina", "N", 410, giro=-6, foto=foto("nina.jpg") if f_n.exists() else None)
-    t1 = Texto([("Ele se chama", F_TXT2, BRANCO, 0)], 330)
-    t2 = Texto([("e ela,", F_TXT2, BRANCO, 0)], 1500)
+class PolaroidCamera:
+    """Polaroide com a foto vista por uma câmera (centro e zoom): dá pra aproximar e deslizar dentro da moldura."""
 
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        t1.desenhar(tela, tl, 0.0)
-        p = ease_out((tl - 0.1) / 0.45)
-        colar(tela, c_d, 300 - 500 * (1 - p), 880, 1.0, lim((tl - 0.1) / 0.15))
-        t2.desenhar(tela, tl, 0.75)
-        p2 = ease_out((tl - 0.95) / 0.45)
-        colar(tela, c_n, 780 + 500 * (1 - p2), 1010, 1.0, lim((tl - 0.95) / 0.15))
-        if tl > 1.5:
-            q = tl - 1.5
-            colar(tela, coracao(130, ROXO_VIVO), 545, 930, 0.3 + 0.7 * ease_back(q / 0.35), lim(q / 0.1))
-            colar(tela, coracao(96, LILAS), 545, 930, 0.3 + 0.7 * ease_back(q / 0.35), lim(q / 0.1))
-        return tela
-    return desenhar
+    def __init__(self, foto_rgb, jw, jh, borda=24, base=120):
+        self.foto, self.jw, self.jh, self.borda = foto_rgb, jw, jh, borda
+        vazio = Image.new("RGBA", (jw + 2 * borda, jh + borda + base), rgba(CREME))
+        self.moldura = sombra(vazio, 18, (0, 14), 130)
+        self.m = 18 * 2 + 14                      # margem que a sombra acrescenta em volta do cartão
+        self.y_legenda = self.m + borda + jh + base / 2 - 4
 
-
-def cena_danilo_nina(t0):
-    """'Ele se chama Danilo' (câmera no rosto dele), 'e ela, Nina' (câmera desliza até ela),
-    depois a selfie dos dois cai por cima."""
-    if not ((FOTOS / "casal_loja.jpg").exists() and (FOTOS / "casal_praia.jpg").exists()):
-        return _cena_cartoes(t0)
-    loja = foto("casal_loja.jpg")
-    JW, JH, BORDA, BASE = 752, 820, 24, 120
-    vazio = Image.new("RGBA", (JW + 2 * BORDA, JH + BORDA + BASE), rgba(CREME))
-    moldura = sombra(vazio, 18, (0, 14), 130)
-    m = 18 * 2 + 14                               # onde o cartão começa dentro da imagem com sombra
-    f_nome = fonte("caveat", 92, 700)
-    nomes = {k: recortar(palavra(k, f_nome, ROXO)) for k in ("Danilo", "Nina")}
-    cam = {}
-    for quem, s in (("danilo", 1.7), ("nina", 1.9)):
-        fx, fy, fw = ROSTO_LOJA[quem]
-        cam[quem] = (fx, fy + 0.06 * JH / s, s)
-    t1 = Texto([("Ele se chama", F_TXT2, BRANCO, 0)], 330)
-    t2 = Texto([("e ela,", F_TXT2, BRANCO, 0)], 330)
-    praia = foto("casal_praia.jpg")
-    selfie = polaroid(praia, 728, 850, base=110, legenda="Danilo e Nina", f_legenda=fonte("caveat", 84, 700))
-    T_PAN, D_PAN, T_SELFIE = 1.0, 0.35, 2.05
-    cor_e = Coracoes(6, T_SELFIE + 0.05, T_SELFIE + 0.7, area=(125, 200, 1150, 1450), semente=21, tam=(48, 84))
-    cor_d = Coracoes(6, T_SELFIE + 0.05, T_SELFIE + 0.7, area=(880, 955, 1150, 1450), semente=22, tam=(48, 84))
-
-    def camera(tl):
-        """Centro, zoom e rosto em foco (fx, fy, largura) no tempo tl."""
-        p = ease_in_out((tl - T_PAN) / D_PAN)
-        a, b = cam["danilo"], cam["nina"]
-        ra, rb = ROSTO_LOJA["danilo"], ROSTO_LOJA["nina"]
-        empurra = 1 + 0.04 * (tl if p <= 0 else max(0.0, tl - T_PAN - D_PAN))
-        s = (a[2] * 1.04 + (b[2] - a[2] * 1.04) * p) if 0 < p < 1 else (a[2] if p <= 0 else b[2])
-        s *= empurra if (p <= 0 or p >= 1) else 1
-        cx, cy = a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p
-        rosto = tuple(ra[i] + (rb[i] - ra[i]) * p for i in range(3))
-        return cx, cy, s, rosto
-
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        t1.desenhar(tela, tl, 0.0, t_out=0.95)
-        t2.desenhar(tela, tl, 1.12, t_out=T_SELFIE - 0.1)
-        cx, cy, s, (fx, fy, fw) = camera(tl)
-        vista, (x0, y0) = janela_camera(loja, cx, cy, s, JW, JH)
-        foco = 1 - ease_in((tl - T_SELFIE) / 0.3)          # o holofote some quando a selfie chega
-        if foco > 0.01:
-            vista = holofote(vista, (fx - x0) * s, (fy - y0) * s, fw * s * 0.72, 0.5 * foco)
-        card = moldura.copy()
-        card.paste(vista, (m + BORDA, m + BORDA))
-        yl = m + BORDA + JH + BASE / 2 - 4
-        q1 = (tl - 0.25) / 0.3
-        colar(card, nomes["Danilo"], card.width / 2, yl, 0.7 + 0.3 * ease_back(q1),
-              lim(q1 * 3) * lim((T_PAN + 0.12 - tl) / 0.12))
-        q2 = (tl - T_PAN - 0.3) / 0.3
-        colar(card, nomes["Nina"], card.width / 2, yl, 0.7 + 0.3 * ease_back(q2), lim(q2 * 3))
-        p = ease_out(tl / 0.3)
-        colar(tela, card, 540, 960 + 50 * (1 - p), 1.1 - 0.1 * p, lim(tl / 0.12), giro=-1.5)
-        q = tl - T_SELFIE
-        if q > 0:
-            p = ease_out(q / 0.3)
-            colar(tela, selfie, 540, 985 - 50 * (1 - p), 1.3 - 0.3 * p, lim(q / 0.1), giro=-3 + 11 * (1 - p))
-            cor_e.desenhar(tela, tl, vida=1.0)
-            cor_d.desenhar(tela, tl, vida=1.0)
-        return tela
-    return desenhar
-
-
-def cena_logo(t0):
-    t1 = Texto([("E juntos, eles têm a", F_TXT, BRANCO, 0)], 560)
-    lg = logo(780)
-    lg_s = sombra(lg, 24, (0, 14), 120)
-    mascara = lg.getchannel("A")
-
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        t1.desenhar(tela, tl, 0.0)
-        q = tl - 0.5
-        if q > 0:
-            e = 0.55 + 0.45 * ease_back(q / 0.5, 2.2)
-            img = lg_s
-            if 0.45 < q < 1.15:      # brilho passando pelo logo
-                s = (q - 0.45) / 0.7
-                faixa = Image.new("L", lg.size, 0)
-                x = int(-300 + (lg.width + 600) * s)
-                ImageDraw.Draw(faixa).polygon([(x, 0), (x + 120, 0), (x - 80, lg.height), (x - 200, lg.height)],
-                                              fill=170)
-                faixa = faixa.filter(ImageFilter.GaussianBlur(30))
-                from PIL import ImageChops
-                faixa = ImageChops.multiply(faixa, mascara)
-                bril = Image.new("RGBA", lg.size, (255, 255, 255, 0))
-                bril.putalpha(faixa)
-                img = lg_s.copy()
-                m = (img.width - lg.width) // 2
-                img.alpha_composite(bril, (m, (img.height - lg.height) // 2))
-            colar(tela, img, 540, 1050, e, lim(q / 0.12))
-            for i in range(7):
-                a = 2 * math.pi * i / 7 + 0.4
-                d = 330 + 70 * ease_out((q - 0.2) / 0.6)
-                al = lim((q - 0.25) / 0.15) * lim(1 - (q - 1.0) / 0.4)
-                colar(tela, brilho(46 + 16 * (i % 2)), 540 + d * math.cos(a), 1050 + 0.75 * d * math.sin(a),
-                      0.7 + 0.3 * math.sin(q * 12 + i), al)
-        return tela
-    return desenhar
-
-
-def cena_loja(t0, selo=False):
-    pil = pilula("@ninafitfood", fonte("montserrat", 50, 800), icone=icone_camera(54))
-
-    def desenhar(tl, quadro):
-        tela = quadro
-        q = tl - 0.12
-        if selo and q > 0:
-            colar(tela, pil, 540, 1430 + 40 * (1 - ease_out(q / 0.35)), 0.9 + 0.1 * ease_back(q / 0.35),
-                  lim(q / 0.15))
-        return tela
-    return desenhar
-
-
-def cena_lanchinho(t0):
-    t1 = Texto([("No Farol, sempre", F_TXT, BRANCO, 0), ("levamos um", F_TXT, BRANCO, 0)], 330)
-    t2 = Texto([("lanchinho", F_SCRIPT, VERDE_CLARO, 0)], 520)
-
-    def desenhar(tl, quadro):
-        tela = quadro
-        faixa_escura(tela, 180, 660, 170)
-        t1.desenhar(tela, tl, 0.0)
-        t2.desenhar(tela, tl, 0.45, passo=0.1)
-        return tela
-    return desenhar
-
-
-def cena_todos_nos(t0):
-    im = recorte_proporcao(foto("04_farol_ano_novo.jpg"), 4 / 3)
-    pol = polaroid(im, 900, int(852 * 3 / 4), base=80)
-    t1 = Texto([("E todos nós...", F_SCRIPT, BRANCO, 0)], 420)
-
-    def desenhar(tl, _):
-        tela = base_roxa(t0 + tl)
-        t1.desenhar(tela, tl, 0.0, passo=0.12)
-        p = ease_out(tl / 0.35)
-        colar(tela, pol, 540, 1020 + 80 * (1 - p), 1.15 - 0.15 * p + 0.03 * tl, lim(tl / 0.12),
-              giro=-3 + 6 * (1 - p))
-        return tela
-    return desenhar
-
-
-def cena_guarapari(t0):
-    im = Image.open(PASTA / "fotos" / "03_guarapari.jpg").convert("RGB")
-    e = H / im.height * 1.08
-    grande = im.resize((int(im.width * e), int(im.height * e)), Image.LANCZOS)
-    t1 = Texto([("e a cidade de", F_TXT, BRANCO, 0)], 330)
-    t2 = Texto([("Guarapari", F_SCRIPT, VERDE_CLARO, 0)], 490)
-
-    def desenhar(tl, _):
-        p = ease_in_out(tl / 1.5)
-        x0 = int((grande.width - W) * (0.62 - 0.22 * p))
-        y0 = int((grande.height - H) * 0.5)
-        tela = grande.crop((x0, y0, x0 + W, y0 + H)).convert("RGBA")
-        faixa_escura(tela, 170, 640, 150)
-        t1.desenhar(tela, tl, 0.0)
-        t2.desenhar(tela, tl, 0.3, passo=0.1)
-        return tela
-    return desenhar
+    def quadro(self, cx, cy, s, foco=None, escuro=0.0):
+        vista, (x0, y0) = janela_camera(self.foto, cx, cy, s, self.jw, self.jh)
+        if foco and escuro > 0.01:
+            fx, fy, fw = foco
+            vista = holofote(vista, (fx - x0) * s, (fy - y0) * s, fw * s * 0.72, escuro)
+        card = self.moldura.copy()
+        card.paste(vista, (self.m + self.borda, self.m + self.borda))
+        return card
 
 
 class Coracoes:
@@ -598,21 +286,374 @@ class Coracoes:
                 colar(tela, coracao(c["tam"], c["cor"]), x, y, e, a, giro=12 * math.sin(d * 4 + c["fase"]))
 
 
+# =====================================================================
+# A história, narrada (cada cena sabe quando entra cada fala)
+# =====================================================================
+
+PART = Particulas()
+F_TXT = fonte("montserrat", 64, 800)
+F_TXT2 = fonte("montserrat", 58, 800)
+F_GRANDE = fonte("anton", 150)
+F_SCRIPT = fonte("caveat", 128, 700)
+F_SCRIPT_M = fonte("caveat", 104, 700)
+FALAS = narracao.falas()
+
+
+def dur_fala(ch):
+    return FALAS[ch]["duracao"]
+
+
+def tempos_fala(ch, t0, de=0, ate=None):
+    """Quando cada palavra da fala entra, em tempo da cena (a fala começa em t0)."""
+    return [t0 + t for t in FALAS[ch]["inicios"][de:ate]]
+
+
+def base_roxa(t_abs):
+    tela = fundo_roxo().copy()
+    PART.desenhar(tela, t_abs)
+    return tela
+
+
+def cena_igreja(t0):
+    """'Somos membros da PIB Guarapari. Uma igreja grande. Grande mesmo. Por isso, a gente se uniu num pequeno
+    grupo...': foto da igreja cheia (a câmera vai abrindo), o símbolo da PIB no canto e os corações se juntando."""
+    im = foto("pib.jpg")
+    jw = 882
+    cam = PolaroidCamera(im, jw, int(jw * im.height / im.width), base=56)
+    s0 = jw / im.width
+    T1 = 0.3
+    T2 = T1 + dur_fala("pib") + 0.25
+    T3 = T2 + dur_fala("grande") + 0.3
+    dur = T3 + dur_fala("grupo") + 0.45
+    a1 = Texto([("Somos membros da", F_TXT, BRANCO, 0)], 300)
+    a2 = Texto([("PIB GUARAPARI", F_GRANDE, BRANCO, 0)], 1200, espaco=34)
+    b1 = Texto([("Uma igreja grande.", F_TXT, BRANCO, 0), ("Grande mesmo.", F_SCRIPT, VERDE_CLARO, 0)], 320)
+    c1 = Texto([("Por isso, a gente se uniu", F_TXT2, BRANCO, 0)], 1175)
+    c2 = Texto([("num pequeno grupo...", F_SCRIPT, VERDE_CLARO, 0)], 1315)
+    tp = tempos_fala("pib", T1)
+    tg = tempos_fala("grande", T2)
+    tu = tempos_fala("grupo", T3)
+
+    def desenhar(tl, _):
+        tela = base_roxa(t0 + tl)
+        card = cam.quadro(im.width / 2, im.height / 2, s0 * (1.18 - 0.18 * ease_in_out(tl / dur)))
+        q = tl - 0.05
+        if q > 0:
+            p = ease_out(q / 0.35)
+            colar(tela, card, 540, 760 + 60 * (1 - p), 1.15 - 0.15 * p, lim(q / 0.12), giro=-2.5 + 6 * (1 - p))
+        qs = tl - 0.4
+        if qs > 0 and tl < T3 + 0.2:                     # símbolo da PIB no canto, com o barquinho balançando
+            sai = ease_in((tl - T3) / 0.2)
+            colar(tela, selo_pib(4.5 * math.sin(2 * math.pi * tl / 1.5), 210), 165, 505,
+                  (0.5 + 0.5 * ease_back(qs / 0.4, 2.2)) * (1 - 0.6 * sai), lim(qs / 0.1) * (1 - sai), giro=-8)
+        a1.desenhar(tela, tl, t_out=T2 - 0.15, tempos=tp[:3])
+        a2.desenhar(tela, tl, t_out=T3 - 0.15, tempos=tp[3:])
+        p = ease_out((tl - tp[3] - 0.3) / 0.4) * (1 - ease_in((tl - T3 + 0.15) / 0.22))
+        if p > 0.01:
+            ImageDraw.Draw(tela).rounded_rectangle([540 - 330 * p, 1300, 540 + 330 * p, 1312], 6, fill=rgba(VERDE))
+        b1.desenhar(tela, tl, t_out=dur - 0.25, tempos=tg)
+        c1.desenhar(tela, tl, tempos=tu[:6])
+        c2.desenhar(tela, tl, tempos=tu[6:])
+        r = np.random.default_rng(5)                    # coraçõezinhos que se juntam: o grupo se formando
+        t_g = tu[7]
+        p = ease_in_out((tl - t_g) / 1.0)
+        for i in range(14):
+            ang = 2 * math.pi * i / 14
+            x0, y0 = 540 + r.uniform(-420, 420), 1455 + r.uniform(-60, 60)
+            x1, y1 = 540 + 105 * math.cos(ang), 1455 + 30 * math.sin(ang)
+            colar(tela, coracao(38, [LILAS, VERDE_CLARO, BRANCO][i % 3]), x0 + (x1 - x0) * p, y0 + (y1 - y0) * p,
+                  1.0, lim((tl - t_g + 0.3) / 0.3) * 0.95)
+        return tela
+    return desenhar, dur, [("pib", T1), ("grande", T2), ("grupo", T3)]
+
+
+def cena_farol(t0):
+    T = 0.2
+    dur = T + dur_fala("farol") + 0.6
+    t1 = Texto([("que a gente chama de", F_TXT, BRANCO, 0)], 330)
+    t2 = Texto([("FAROL", fonte("anton", 200), BRANCO, 0)], 1440, espaco=30)
+    tf = tempos_fala("farol", T)
+
+    def desenhar(tl, _):
+        tela = base_roxa(t0 + tl)
+        p = ease_back(tl / 0.55)
+        colar(tela, farol(tl + 0.8, 560), 540, 860 + 120 * (1 - ease_out(tl / 0.5)), 0.85 + 0.15 * p, lim(tl / 0.25))
+        t1.desenhar(tela, tl, tempos=tf[:5])
+        t2.desenhar(tela, tl, tempos=tf[5:])
+        return tela
+    return desenhar, dur, [("farol", T)]
+
+
+def cena_encontros(t0):
+    T = 0.15
+    dur = max(2.5, T + dur_fala("encontros") + 0.6)
+    specs = [  # (arquivo, proporção, largura, x, y, giro)
+        ("04_farol_ano_novo.jpg", 4 / 3, 640, 330, 660, -7),
+        ("05_farol_sofa_limpa.jpg", 16 / 9, 680, 690, 880, 6),
+        ("06_farol_selfie.jpg", 16 / 10, 680, 360, 1140, 4),
+        ("07_farol_19set.jpg", 4 / 3, 620, 715, 1340, -5),
+        ("08_farol_restaurante.jpg", 3 / 4, 470, 560, 1030, -2),
+    ]
+    pols = []
+    for arq, prop, larg, x, y, g in specs:
+        im = recorte_proporcao(foto(arq), prop)
+        pols.append((polaroid(im, larg, int((larg - 48) / prop), base=70), x, y, g))
+    titulo = Texto([("Esses são os nossos", F_TXT2, BRANCO, 0), ("encontros", F_SCRIPT_M, VERDE_CLARO, 0)], 300)
+    te = tempos_fala("encontros", T)
+
+    def desenhar(tl, _):
+        tela = base_roxa(t0 + tl)
+        for k, (pol, x, y, g) in enumerate(pols):
+            tk = tl - 0.1 - 0.36 * k
+            if tk <= 0:
+                continue
+            p = ease_out(tk / 0.32)
+            colar(tela, pol, x, y - 60 * (1 - p), 1.35 - 0.35 * p, lim(tk / 0.12), giro=g + 10 * (1 - p))
+        titulo.desenhar(tela, tl, tempos=te)
+        return tela
+    return desenhar, dur, [("encontros", T)]
+
+
+# rostos na foto da loja (coordenadas do recorte): centro x, centro y, largura do rosto
+ROSTO_LOJA = {"danilo": (491, 333, 189), "nina": (654, 463, 159)}
+
+
+def cena_casal(t0):
+    """'Até que, no ano passado, um casal chegou pra fazer parte do grupo.' (foto dos dois), 'Ele se chama Danilo.'
+    (a câmera chega no rosto dele), 'E ela, Nina.' (desliza até ela) e a selfie dos dois caindo por cima."""
+    loja = foto("casal_loja.jpg")
+    cam = PolaroidCamera(loja, 752, 820)
+    f_nome = fonte("caveat", 92, 700)
+    nomes = {k: recortar(palavra(k, f_nome, ROXO)) for k in ("Danilo", "Nina")}
+    T_CASAL = 0.15
+    T_ZOOM = T_CASAL + dur_fala("casal") + 0.15
+    D_ZOOM, D_PAN = 0.5, 0.35
+    T_DANILO = T_ZOOM + 0.05
+    T_PAN = T_DANILO + dur_fala("danilo") + 0.2
+    T_NINA = T_PAN + 0.05
+    T_SELFIE = T_NINA + dur_fala("nina") + 0.35
+    dur = T_SELFIE + 1.15
+    td = tempos_fala("danilo", T_DANILO)
+    tn = tempos_fala("nina", T_NINA)
+    pos = {"casal": (513, 560, 820 / 1120)}            # os dois inteiros, sem o canto dos ícones
+    for quem, s in (("danilo", 1.7), ("nina", 1.9)):
+        fx, fy, _ = ROSTO_LOJA[quem]
+        pos[quem] = (fx, fy + 0.06 * 820 / s, s)
+    a1 = Texto([("Até que, no ano passado,", fonte("caveat", 94, 700), VERDE_CLARO, 0)], 260)   # cabe na zona segura
+    a2 = Texto([("um casal chegou pra fazer", F_TXT2, BRANCO, 0), ("parte do grupo", F_TXT2, BRANCO, 0)], 450)
+    b1 = Texto([("Ele se chama", F_TXT2, BRANCO, 0)], 330)
+    b2 = Texto([("e ela,", F_TXT2, BRANCO, 0)], 330)
+    tc = tempos_fala("casal", T_CASAL)
+    selfie = polaroid(foto("casal_praia.jpg"), 728, 850, base=110, legenda="Danilo e Nina",
+                      f_legenda=fonte("caveat", 84, 700))
+    cor_chegou = [Coracoes(5, 0.7, 1.5, area=area, semente=30 + k, tam=(40, 70))
+                  for k, area in enumerate(((150, 215, 1150, 1400), (865, 930, 1150, 1400)))]
+    cor_selfie = [Coracoes(6, T_SELFIE + 0.05, T_SELFIE + 0.7, area=area, semente=21 + k, tam=(48, 84))
+                  for k, area in enumerate(((125, 200, 1150, 1450), (880, 955, 1150, 1450)))]
+
+    def ir(a, b, p, zoom_log=False):
+        s = math.exp(math.log(a[2]) + (math.log(b[2]) - math.log(a[2])) * p) if zoom_log else a[2] + (b[2] - a[2]) * p
+        return a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p, s
+
+    def camera(tl):
+        casal = pos["casal"]
+        if tl < T_ZOOM:
+            return casal[0], casal[1], casal[2] * (1 + 0.02 * tl), None, 0.0
+        danilo = pos["danilo"]
+        if tl < T_PAN:
+            p = ease_in_out((tl - T_ZOOM) / D_ZOOM)
+            cx, cy, s = ir((casal[0], casal[1], casal[2] * (1 + 0.02 * T_ZOOM)), danilo, p, zoom_log=True)
+            return cx, cy, s * (1 + 0.04 * max(0.0, tl - T_ZOOM - D_ZOOM)), ROSTO_LOJA["danilo"], 0.5 * p
+        p = ease_in_out((tl - T_PAN) / D_PAN)
+        cx, cy, s = ir((danilo[0], danilo[1], danilo[2] * (1 + 0.04 * (T_PAN - T_ZOOM - D_ZOOM))), pos["nina"], p)
+        foco = tuple(a + (b - a) * p for a, b in zip(ROSTO_LOJA["danilo"], ROSTO_LOJA["nina"]))
+        return (cx, cy, s * (1 + 0.04 * max(0.0, tl - T_PAN - D_PAN)), foco,
+                0.5 * (1 - ease_in((tl - T_SELFIE) / 0.3)))
+
+    def desenhar(tl, _):
+        tela = base_roxa(t0 + tl)
+        cx, cy, s, foco, escuro = camera(tl)
+        card = cam.quadro(cx, cy, s, foco, escuro)
+        xl, yl = card.width / 2, cam.y_legenda
+        if tl < T_ZOOM + 0.2:                            # coraçãozinho na legenda enquanto ainda não tem nome
+            colar(card, coracao(54, ROXO_VIVO), xl, yl, 1.0, lim((tl - 0.3) / 0.2) * lim((T_ZOOM + 0.2 - tl) / 0.2))
+        q1 = (tl - td[-1] + 0.05) / 0.3
+        colar(card, nomes["Danilo"], xl, yl, 0.7 + 0.3 * ease_back(q1), lim(q1 * 3) * lim((T_PAN + 0.12 - tl) / 0.12))
+        q2 = (tl - tn[-1] + 0.05) / 0.3
+        colar(card, nomes["Nina"], xl, yl, 0.7 + 0.3 * ease_back(q2), lim(q2 * 3))
+        g = ease_in_out((tl - T_ZOOM) / D_ZOOM)
+        q = tl - 0.05
+        if q > 0:
+            p = ease_out(q / 0.3)
+            colar(tela, card, 540, 1050 - 90 * g + 50 * (1 - p), (0.84 + 0.16 * g) * (1.1 - 0.1 * p), lim(q / 0.12),
+                  giro=-1.5)
+        a1.desenhar(tela, tl, t_out=T_ZOOM - 0.1, tempos=tc[:5])
+        a2.desenhar(tela, tl, t_out=T_ZOOM - 0.1, tempos=tc[5:])
+        for c in cor_chegou:                              # somem antes da câmera entrar nos rostos
+            c.desenhar(tela, tl, vida=1.0, fim=T_ZOOM + 0.05)
+        b1.desenhar(tela, tl, t_out=T_PAN - 0.05, tempos=td[:3])
+        b2.desenhar(tela, tl, t_out=T_SELFIE - 0.1, tempos=tn[:2])
+        qs = tl - T_SELFIE
+        if qs > 0:
+            p = ease_out(qs / 0.3)
+            colar(tela, selfie, 540, 985 - 50 * (1 - p), 1.3 - 0.3 * p, lim(qs / 0.1), giro=-3 + 11 * (1 - p))
+            for c in cor_selfie:
+                c.desenhar(tela, tl, vida=1.0)
+        return tela
+    return desenhar, dur, [("casal", T_CASAL), ("danilo", T_DANILO), ("nina", T_NINA)]
+
+
+def cena_logo(t0):
+    T = 0.15
+    dur = T + dur_fala("juntos") + 0.55
+    t1 = Texto([("E juntos, eles têm a", F_TXT, BRANCO, 0)], 560)
+    tj = tempos_fala("juntos", T)
+    t_logo = tj[5] - 0.05
+    lg = logo(780)
+    lg_s = sombra(lg, 24, (0, 14), 120)
+    mascara = lg.getchannel("A")
+
+    def desenhar(tl, _):
+        from PIL import ImageChops
+        tela = base_roxa(t0 + tl)
+        t1.desenhar(tela, tl, tempos=tj[:5])
+        q = tl - t_logo
+        if q > 0:
+            e = 0.55 + 0.45 * ease_back(q / 0.5, 2.2)
+            img = lg_s
+            if 0.45 < q < 1.15:      # brilho passando pelo logo
+                s = (q - 0.45) / 0.7
+                faixa = Image.new("L", lg.size, 0)
+                x = int(-300 + (lg.width + 600) * s)
+                ImageDraw.Draw(faixa).polygon([(x, 0), (x + 120, 0), (x - 80, lg.height), (x - 200, lg.height)],
+                                              fill=170)
+                faixa = ImageChops.multiply(faixa.filter(ImageFilter.GaussianBlur(30)), mascara)
+                bril = Image.new("RGBA", lg.size, (255, 255, 255, 0))
+                bril.putalpha(faixa)
+                img = lg_s.copy()
+                img.alpha_composite(bril, ((img.width - lg.width) // 2, (img.height - lg.height) // 2))
+            colar(tela, img, 540, 1050, e, lim(q / 0.12))
+            for i in range(7):
+                a = 2 * math.pi * i / 7 + 0.4
+                d = 330 + 70 * ease_out((q - 0.2) / 0.6)
+                al = lim((q - 0.25) / 0.15) * lim(1 - (q - 1.0) / 0.4)
+                colar(tela, brilho(46 + 16 * (i % 2)), 540 + d * math.cos(a), 1050 + 0.75 * d * math.sin(a),
+                      0.7 + 0.3 * math.sin(q * 12 + i), al)
+        return tela
+    return desenhar, dur, [("juntos", T)]
+
+
+def cena_loja(selo=False):
+    pil = pilula("@ninafitfood", fonte("montserrat", 50, 800), icone=icone_camera(54))
+
+    def fabrica(t0):
+        def desenhar(tl, quadro):
+            q = tl - 0.12
+            if selo and q > 0:
+                colar(quadro, pil, 540, 1430 + 40 * (1 - ease_out(q / 0.35)), 0.9 + 0.1 * ease_back(q / 0.35),
+                      lim(q / 0.15))
+            return quadro
+        return desenhar, 1.0, []
+    return fabrica
+
+
+def cena_lanchinho(t0):
+    T = 0.1
+    dur = T + dur_fala("lanchinho") + 0.4
+    t1 = Texto([("No Farol, a gente", F_TXT, BRANCO, 0), ("sempre leva um", F_TXT, BRANCO, 0)], 320)
+    t2 = Texto([("lanchinho", F_SCRIPT, VERDE_CLARO, 0)], 530)
+    tl_ = tempos_fala("lanchinho", T)
+
+    def desenhar(tl, quadro):
+        faixa_escura(quadro, 170, 680, 170)
+        t1.desenhar(quadro, tl, tempos=tl_[:7])
+        t2.desenhar(quadro, tl, tempos=tl_[7:])
+        return quadro
+    return desenhar, dur, [("lanchinho", T)]
+
+
+def cena_todos(t0):
+    T = 0.1
+    dur = max(1.4, T + dur_fala("todos") + 0.45)
+    im = recorte_proporcao(foto("04_farol_ano_novo.jpg"), 4 / 3)
+    pol = polaroid(im, 900, int(852 * 3 / 4), base=80)
+    t1 = Texto([("E todos nós...", F_SCRIPT, BRANCO, 0)], 420)
+    tt = tempos_fala("todos", T)
+
+    def desenhar(tl, _):
+        tela = base_roxa(t0 + tl)
+        t1.desenhar(tela, tl, tempos=tt)
+        p = ease_out(tl / 0.35)
+        colar(tela, pol, 540, 1020 + 80 * (1 - p), 1.15 - 0.15 * p + 0.03 * tl, lim(tl / 0.12), giro=-3 + 6 * (1 - p))
+        return tela
+    return desenhar, dur, [("todos", T)]
+
+
+def cena_guarapari(t0):
+    T = 0.1
+    dur = T + dur_fala("cidade") + 0.6
+    im = Image.open(PASTA / "fotos" / "03_guarapari.jpg").convert("RGB")
+    e = H / im.height * 1.08
+    grande = im.resize((int(im.width * e), int(im.height * e)), Image.LANCZOS)
+    t1 = Texto([("e a cidade de", F_TXT, BRANCO, 0)], 330)
+    t2 = Texto([("Guarapari", fonte("caveat", 150, 700), VERDE_CLARO, 0)], 500)
+    tc = tempos_fala("cidade", T)
+    pino = emoji("📍", 110)
+    x_pino = 540 - t2.itens[0][0].width / 2 - 55          # logo à esquerda do nome
+
+    def desenhar(tl, _):
+        p = ease_in_out(tl / dur)
+        x0 = int((grande.width - W) * (0.62 - 0.22 * p))
+        y0 = int((grande.height - H) * 0.5)
+        tela = grande.crop((x0, y0, x0 + W, y0 + H)).convert("RGBA")
+        faixa_escura(tela, 170, 660, 150)
+        t1.desenhar(tela, tl, tempos=tc[:4])
+        t2.desenhar(tela, tl, tempos=tc[4:])
+        q = tl - tc[4] - 0.25
+        if q > 0:                                          # pino de localização caindo ao lado do nome
+            colar(tela, pino, x_pino, 480 - 320 * (1 - mola(q / 0.7)), 1.0, lim(q / 0.08))
+        return tela
+    return desenhar, dur, [("cidade", T)]
+
+
 def cena_apaixonados(t0):
+    T = 0.1
+    dur = T + dur_fala("apaixonados") + 0.45
     t1 = Texto([("nos tornamos", F_TXT, BRANCO, 0)], 290)
     t2 = Texto([("apaixonados", F_SCRIPT, VERDE_CLARO, 0)], 435)
     t3 = Texto([("pelas delícias que", F_TXT2, BRANCO, 0), ("a Nina prepara", F_TXT2, BRANCO, 0)], 640)
-    cor = Coracoes(16, 0.4, 2.3, area=(150, 930, 1560, 1800), semente=4)
+    ta = tempos_fala("apaixonados", T)
+    cor = Coracoes(16, ta[2], ta[2] + 1.9, area=(150, 930, 1560, 1800), semente=4)
 
     def desenhar(tl, quadro):
-        tela = quadro
-        faixa_escura(tela, 160, 780, 165)
-        t1.desenhar(tela, tl, 0.0)
-        t2.desenhar(tela, tl, 0.25, passo=0.1)
-        t3.desenhar(tela, tl, 0.7, passo=0.06)
-        cor.desenhar(tela, tl, vida=1.25)
-        return tela
-    return desenhar
+        faixa_escura(quadro, 160, 780, 165)
+        t1.desenhar(quadro, tl, tempos=ta[:2])
+        t2.desenhar(quadro, tl, tempos=ta[2:3])
+        t3.desenhar(quadro, tl, tempos=ta[3:])
+        cor.desenhar(quadro, tl, vida=1.25)
+        return quadro
+    return desenhar, dur, [("apaixonados", T)]
+
+
+def cena_reacao(t0):
+    T = 0.1
+    dur = T + dur_fala("reacao") + 0.35
+    t1 = Texto([("E esse vídeo mostra a", F_TXT2, BRANCO, 0), ("reação de quem come", F_TXT2, BRANCO, 0),
+                ("essas delícias...", F_TXT2, BRANCO, 0)], 400)
+    t2 = Texto([("e se apaixona!", F_SCRIPT, VERDE_CLARO, 0)], 1450)
+    tr = tempos_fala("reacao", T)
+    cor = [Coracoes(5, tr[11], tr[11] + 1.0, area=area, semente=9 + k)       # sobem pelos lados, longe do texto
+           for k, area in enumerate(((120, 230, 1500, 1800), (850, 960, 1500, 1800)))]
+
+    def desenhar(tl, quadro):
+        faixa_escura(quadro, 200, 640, 150)
+        t1.desenhar(quadro, tl, tempos=tr[:11])
+        faixa_escura(quadro, 1330, 1580, 130 * lim((tl - tr[11] + 0.2) / 0.2))
+        t2.desenhar(quadro, tl, tempos=tr[11:])
+        for c in cor:
+            c.desenhar(quadro, tl, vida=1.2)
+        return quadro
+    return desenhar, dur, [("reacao", T)]
 
 
 def cena_final(t0):
@@ -636,11 +677,11 @@ def cena_final(t0):
                   lim(q / 0.15))
         t3.desenhar(tela, tl, 1.0, passo=0.04)
         return tela
-    return desenhar
+    return desenhar, 2.5, []
 
 
 # =====================================================================
-# Legendas (fala) no estilo da marca: caixa roxa na palavra falada
+# Legendas das falas: caixa roxa na palavra falada, longe dos rostos
 # =====================================================================
 
 F_LEG = fonte("montserrat", 62, 800)
@@ -661,7 +702,7 @@ def bloco_legenda(palavras, ativa):
     esp = 14
     linhas, atual, larg = [], [], 0
     for im in imgs:
-        if atual and larg + esp + im.width > 860:
+        if atual and larg + esp + im.width > 800:          # zona segura: x de 140 a 940
             linhas.append(atual)
             atual, larg = [], 0
         larg += (esp if atual else 0) + im.width
@@ -681,18 +722,22 @@ def bloco_legenda(palavras, ativa):
     return sombra(out, 12, (0, 6), 120)
 
 
+def cruza(caixa, rosto, folga=24):
+    x0, y0, x1, y1 = caixa
+    a, b, c, d = rosto
+    return not (x1 < a - folga or x0 > c + folga or y1 < b - folga or y0 > d + folga)
+
+
 class Legendas:
     def __init__(self):
-        self.grupos = []          # (ini, fim, [palavras], [tempos], y)
+        self.pendentes = []       # (ini, fim, [palavras], [inícios], objeto, t0 do objeto, largura, altura)
+        self.grupos = []          # (ini, fim, [palavras], [inícios], y, largura, altura), depois de posicionar()
         self.cache = {}
 
-    def adicionar(self, palavras, y=1290, maximo=3, trocas=None, limite=None):
-        """palavras: [(texto, ini, fim)] em tempo de saída. limite: a legenda não passa desse tempo (corte)."""
-        trocas = trocas or {}
-        atual = []
-        grupos = []
-        for k, (w, s, e) in enumerate(palavras):
-            w = trocas.get(w, w)
+    def adicionar(self, palavras, obj, t_obj, maximo=3):
+        """palavras: [(texto, ini, fim)] em tempo de saída; obj/t_obj: o trecho (pra achar os rostos)."""
+        atual, grupos = [], []
+        for w, s, e in palavras:
             if atual and (len(atual) >= maximo or s - atual[-1][2] > 0.35):
                 grupos.append(atual)
                 atual = []
@@ -702,149 +747,223 @@ class Legendas:
                 atual = []
         if atual:
             grupos.append(atual)
+        fim_trecho = t_obj + obj.dur
         for i, g in enumerate(grupos):
             prox = grupos[i + 1][0][1] if i + 1 < len(grupos) else g[-1][2] + 0.4
-            fim = prox if prox - g[-1][2] < 0.6 else g[-1][2] + 0.3
-            if limite is not None:
-                fim = min(fim, limite)
-            self.grupos.append((g[0][1], fim, [w for w, _, _ in g], [s for _, s, _ in g], y))
+            fim = min(prox if prox - g[-1][2] < 0.6 else g[-1][2] + 0.3, fim_trecho)
+            ini = max(g[0][1], t_obj)
+            if fim - ini < 0.05:
+                continue
+            ws = [w if w.endswith("...") else w.rstrip(",.") for w, _, _ in g]
+            larg = max(bloco_legenda(ws, i).width for i in range(len(ws)))
+            self.pendentes.append((ini, fim, ws, [s for _, s, _ in g], obj, t_obj, larg, bloco_legenda(ws, 0).height))
 
-    def desenhar(self, tela, t, ocultar=()):
-        for a, b in ocultar:
-            if a <= t < b:
-                return
-        for ini, fim, ws, ts, y in self.grupos:
+    def posicionar(self, ocupados):
+        """Altura de cada grupo: a primeira opção que não encosta em rosto nenhum nem nas áreas ocupadas
+        (carimbo, cartão do perfil, título, contagem) enquanto o grupo está na tela.
+        ocupados: [(início, fim, caixa, tipo)] em tempo de saída."""
+        self.grupos = []
+        for ini, fim, ws, ts, obj, t_obj, larg, altura in self.pendentes:
+            # o carimbo é a resposta da pergunta da legenda: quando ele bate, a legenda sai
+            fim = min([fim] + [a for a, b, caixa, tipo in ocupados if tipo == "selo" and ini + 0.6 < a < fim])
+            rs = []
+            for t in np.linspace(ini, fim, 4):
+                rs += obj.rostos(t - t_obj)
+            rs += [caixa for a, b, caixa, tipo in ocupados if a < fim and ini < b]
+            y = next((y for y in (1290, 1440, 1020, 470, 330)
+                      if not any(cruza((100, y - altura / 2, 980, y + altura / 2), r) for r in rs)), 1290)
+            self.grupos.append((ini, fim, ws, ts, y, larg, altura))
+
+    def caixas(self, t0, t1):
+        """Onde ficam as legendas que aparecem entre t0 e t1 (pra emoji e número não caírem em cima)."""
+        return [(540 - larg / 2, y - altura / 2, 540 + larg / 2, y + altura / 2)
+                for ini, fim, ws, ts, y, larg, altura in self.grupos if ini < t1 and t0 < fim and fim > 2.95]
+
+    def desenhar(self, tela, t):
+        if t < 2.95:                                     # o gancho do começo ocupa o lugar da legenda
+            return
+        for ini, fim, ws, ts, y, _, _ in self.grupos:
             if ini <= t < fim:
                 ativa = max([i for i, s in enumerate(ts) if s <= t + 0.02] or [0])
                 chave = (tuple(ws), ativa)
                 if chave not in self.cache:
-                    self.cache[chave] = bloco_legenda([w if w.endswith("...") else w.rstrip(",.") for w in ws], ativa)
+                    self.cache[chave] = bloco_legenda(ws, ativa)
                 e = 0.9 + 0.1 * ease_back((t - ini) / 0.12)
                 colar(tela, self.cache[chave], 540, y, e, lim((t - ini) / 0.05))
                 return
 
 
 # =====================================================================
-# A montagem
+# A linha do tempo
 # =====================================================================
 
-CORRIGIR = {  # (fonte, início no whisper) -> (início, fim) conferidos na forma de onda
-    ("IMG_6490", 17.36): (17.34, 17.48),
-    ("IMG_6503", 50.50): (50.40, 50.86),
-    ("IMG_6503", 53.44): (53.33, 53.60),
-    ("IMG_6503", 53.98): (53.88, 54.20),
-}
+class Linha:
+    def __init__(self):
+        self.t = 0.0
+        self.trechos = []         # (t0, objeto)
+        self.audios = []          # dict(nome, ini, fim, t0, voz, sem_som)
+        self.narr = []            # (t, chave da fala)
+        self.adesivos = []        # (t, tipo, parâmetros, objeto, t0 do objeto)
+        self.cortes = []          # (t, tipo de transição)
+        self.unidades = []        # (t, número, quem)
+        self.leg = Legendas()
+        self.marcos = {}
 
+    def video(self, nome, a, b, op=None):
+        op = op or {}
+        dur = quadro_inteiro(b - a)
+        v = Video(nome, a, dur, op.get("zoom", (1.0, 1.0)), op.get("foco", (540, 760)), op.get("congelar"),
+                  op.get("socos", ()), op.get("tremer", ()))
+        t0 = self.t
+        self.trechos.append((t0, v))
+        if op.get("audio", True):
+            self.audios.append(dict(nome=nome, ini=a, fim=a + dur, t0=t0, voz=op.get("voz", False),
+                                    sem_som=op.get("sem_som")))
+        if op.get("texto") and op.get("legenda", True):
+            ate = op.get("legenda_ate", a + dur)
+            ws = [(w, t0 + s - a, t0 + e - a) for w, s, e in legendas(nome, a, a + dur, op["texto"], op.get("tempos"))
+                  if s < ate]
+            self.leg.adicionar(ws, v, t0)
+        for ts, tipo, par in op.get("adesivos", []):
+            self.adesivos.append((t0 + ts - a, tipo, par, v, t0))
+        self.t += dur
+        return v
 
-def palavras_de(nome, ini, fim, t0):
-    """Palavras do whisper (modelo grande) dentro de [ini, fim] da fonte, em tempo de saída."""
-    segs = json.load(open(PASTA / "proxy" / f"{nome}.large-v3.json"))
-    out = []
-    for s in segs:
-        for w in s["w"]:
-            c = CORRIGIR.get((nome, round(w["s"], 2)))
-            if c:
-                w = dict(w, s=c[0], e=c[1])
-            meio = (w["s"] + w["e"]) / 2
-            if ini - 0.02 <= meio <= fim + 0.02:
-                out.append((w["w"].strip(), t0 + max(w["s"], ini) - ini, t0 + min(w["e"], fim) - ini))
-    return out
+    def cena(self, fabrica, base=None):
+        t0 = self.t
+        desenhar, dur, falas = fabrica(t0)
+        dur = quadro_inteiro(dur)
+        if base is not None:
+            base.dur = dur
+        self.trechos.append((t0, Cena(desenhar, dur, base)))
+        self.narr += [(t0 + t, ch) for ch, t in falas]
+        self.t += dur
+        return t0
 
 
 def montar_linha():
-    trechos = []          # (t0, objeto)
-    audios = []           # dict(nome, ini, fim, t0, voz, ganho)
-    leg = Legendas()
-    t = 0.0
+    L = Linha()
+    # ---------------- abertura: o bolo e a Brenda explicando ----------------
+    L.video("IMG_6491", 5.30, 5.90, dict(audio=False, zoom=(1.0, 1.08), foco=(540, 900)))
+    L.audios.append(dict(nome="IMG_6490", ini=0.07, fim=0.67, t0=0.0, voz=False))
+    L.cortes.append((L.t, "flash"))
+    for nome, a, b, op in roteiro.abertura():
+        L.video(nome, a, b, op)
+    L.marcos["historia"] = L.t
+    # ---------------- história, narrada ----------------
+    L.cortes.append((L.t, "iris"))
+    for fab, base in [(cena_igreja, None), (cena_farol, None), (cena_encontros, None), (cena_casal, None),
+                      (cena_logo, None), (cena_loja(), Video(LOJA, 1.00, 1.0, (1.0, 1.06), (540, 600))),
+                      (cena_loja(True), Video(LOJA, 38.00, 1.0, (1.04, 1.0), (540, 900))),
+                      (cena_lanchinho, Video("IMG_6499", 0.10, 2.8, (1.0, 1.05), (600, 1100))),
+                      (cena_todos, None), (cena_guarapari, None),
+                      (cena_apaixonados, Video("IMG_6491", 6.40, 3.5, (1.0, 1.05), (540, 1000))),
+                      (cena_reacao, Video("IMG_6491", 1.30, 4.0, (1.0, 1.06), (540, 1000)))]:
+        t0 = L.cena(fab, base)
+        if t0 > L.marcos["historia"] + 0.01:
+            L.cortes.append((t0, "chicote"))
+        if base is not None and base.nome == LOJA and "loja" not in L.marcos:
+            L.marcos["loja"] = t0
+    L.marcos["reacoes"] = L.t
+    # ---------------- as reações, uma pessoa de cada vez ----------------
+    clipe_anterior = None
+    for n, (quem, trechos) in enumerate(roteiro.reacoes(), 1):
+        L.unidades.append((L.t, n, quem))
+        L.cortes.append((L.t, "chicote" if trechos[0][0] == clipe_anterior else "flash"))
+        for nome, a, b, op in trechos:
+            L.video(nome, a, b, op)
+        clipe_anterior = trechos[-1][0]
+    # ---------------- as confeiteiras e a chamada ----------------
+    L.marcos["final"] = L.t
+    L.unidades.append((L.t, len(roteiro.reacoes()) + 1, "confeiteiras"))
+    L.cortes.append((L.t, "chicote"))
+    for nome, a, b, op in roteiro.final():
+        L.video(nome, a, b, op)
+    L.marcos["cartao"] = L.t
+    L.cortes.append((L.t, "iris"))
+    L.cena(cena_final)
+    L.marcos["fim"] = L.t
+    L.ocupados = areas_ocupadas(L)
+    L.leg.posicionar(L.ocupados)
+    return L
 
-    def video(nome, ini, dur, audio=True, voz=False, legenda=False, y_leg=1290, trocas=None, **kw):
-        nonlocal t
-        v = Video(nome, ini, dur, **kw)
-        trechos.append((t, v))
-        if audio:
-            audios.append(dict(nome=nome, ini=ini, fim=ini + dur, t0=t, voz=voz))
-            if legenda:
-                leg.adicionar(palavras_de(nome, ini, ini + dur, t), y_leg, trocas=trocas, limite=t + dur)
-        t += dur
-        return v
 
-    def cena(fun, dur, base=None):
-        nonlocal t
-        trechos.append((t, Cena(fun(t), dur, base)))
-        t += dur
+CARTAO_Y, CARTAO_LARG = 1370, 800                    # cartão do perfil dentro da zona segura
+PREVIA_Y = 1360                                      # as três prévias da abertura, idem
 
-    # ---------------- abertura ----------------
-    video("IMG_6491", 5.30, 0.60, audio=False, zoom=(1.0, 1.08), foco=(540, 900))
-    audios.append(dict(nome="IMG_6490", ini=0.24, fim=0.84, t0=0.0, voz=False))
-    video("IMG_6490", 0.84, 2.72, voz=True, legenda=True, zoom=(1.0, 1.04), foco=(540, 700))
-    video("IMG_6490", 12.44, 3.24, voz=True, legenda=True, zoom=(1.06, 1.0), foco=(540, 700))
-    video("IMG_6490", 15.80, 1.70, voz=True, legenda=True, y_leg=1000, zoom=(1.0, 1.05), foco=(540, 700))
-    video("IMG_6490", 18.00, 1.96, voz=True, legenda=True, y_leg=1000, zoom=(1.05, 1.0), foco=(540, 700))
-    assert abs(t - ANCORA) < 0.01, t
-    # ---------------- história ----------------
-    cena(cena_pib, 2.0)
-    cena(cena_grupo, 3.0)
-    cena(cena_farol, 2.0)
-    cena(cena_fotos_farol, 2.5)
-    cena(cena_casal_chegou, 2.0)
-    cena(cena_danilo_nina, 3.0)
-    cena(cena_logo, 2.0)
-    t_loja = t
-    cena(cena_loja, 1.0, Video(LOJA, 1.00, 1.0, zoom=(1.0, 1.06), foco=(540, 600)))
-    cena(lambda t0: cena_loja(t0, selo=True), 1.0, Video(LOJA, 38.00, 1.0, zoom=(1.04, 1.0), foco=(540, 900)))
-    cena(cena_lanchinho, 2.0, Video("IMG_6499", 0.10, 2.0, zoom=(1.0, 1.06), foco=(600, 1100)))
-    cena(cena_todos_nos, 1.5)
-    cena(cena_guarapari, 1.5)
-    cena(cena_apaixonados, 2.5, Video("IMG_6491", 6.40, 2.5, zoom=(1.0, 1.05), foco=(540, 1000)))
-    t_reacts = t
-    # ---------------- reações ----------------
-    video("IMG_6500", 4.85, 1.25, zoom=(1.0, 1.04), foco=(540, 700))
-    video("IMG_6500", 7.45, 1.25, zoom=(1.08, 1.12), foco=(560, 640))
-    video("IMG_6500", 9.95, 1.00, zoom=(1.0, 1.0), foco=(540, 760), socos=(0.08,))
-    video("IMG_6496", 10.62, 3.00, voz=True, legenda=True, zoom=(1.0, 1.06), foco=(540, 900))
-    video("IMG_6497", 15.45, 1.00, zoom=(1.0, 1.04), foco=(540, 700), socos=(0.05,))
-    video("IMG_6495", 43.30, 1.00, zoom=(1.08, 1.13), foco=(540, 760))
-    video("IMG_6502", 4.80, 1.00, zoom=(1.05, 1.1), foco=(540, 760))
-    video("IMG_6499", 11.60, 1.56, voz=True, legenda=True, zoom=(1.0, 1.04), foco=(560, 640))
-    video("IMG_6499", 15.20, 2.44, voz=True, legenda=True, zoom=(1.06, 1.1), foco=(560, 640))
-    video("IMG_6499", 24.20, 2.00, voz=True, legenda=True, zoom=(1.0, 1.05), foco=(560, 800))
-    t_bolo = t
-    video("IMG_6491", 1.30, 2.00, audio=False, zoom=(1.0, 1.08), foco=(540, 1000))
-    audios.append(dict(nome="IMG_6499", ini=26.55, fim=28.53, t0=t_bolo, voz=True))
-    t_aprov = t
-    video("IMG_6494", 0.00, 3.00, voz=True, congelar=2.12, tremer=((2.05, 18),), zoom=(1.0, 1.06),
-          foco=(540, 700))
-    t_pecado = t
-    video("IMG_6503", 24.05, 4.00, voz=True, legenda=True, y_leg=900, zoom=(1.0, 1.04), foco=(540, 700))
-    # ---------------- chamada ----------------
-    t_cta = t
-    video("IMG_6503", 47.55, 3.33, voz=True, legenda=True, y_leg=470, zoom=(1.0, 1.05), foco=(540, 700))
-    t_corte_bolo = t
-    video("IMG_6495", 1.30, 1.64, audio=False, zoom=(1.0, 1.06), foco=(540, 1000))
-    audios.append(dict(nome="IMG_6503", ini=51.98, fim=53.62, t0=t_corte_bolo, voz=True))
-    leg.adicionar(palavras_de("IMG_6503", 51.98, 53.62, t_corte_bolo), 470, limite=t_corte_bolo + 1.64)
-    video("IMG_6503", 53.84, 0.61, voz=True, legenda=True, y_leg=470, zoom=(1.06, 1.06), foco=(540, 700))
-    video("IMG_6503", 55.00, 1.92, voz=True, legenda=True, y_leg=470, zoom=(1.0, 1.05), foco=(540, 700),
-          trocas={"da": "da"})
-    assert abs(t - FIM_CTA) < 0.02, t
-    cena(cena_final, DURACAO - t)
-    marcos = dict(loja=t_loja, reacts=t_reacts, bolo=t_bolo, aprov=t_aprov, pecado=t_pecado, cta=t_cta,
-                  corte_bolo=t_corte_bolo)
-    return trechos, audios, leg, marcos
+
+def carimbo_seguro(txt):
+    """Carimbo de no máximo 800 px de largura (zona segura)."""
+    im = carimbo(txt, VERDE_CLARO, 120)
+    return im if im.width <= 800 else carimbo(txt, VERDE_CLARO, int(120 * 800 / im.width))
+
+
+def areas_ocupadas(L):
+    """[(início, fim, caixa, tipo)] de carimbo, cartão do perfil, título, contagem e prévias: legenda e emoji
+    desviam deles."""
+    t_react = next(s for g in L.leg.pendentes for w, s in zip(g[2], g[3]) if w.startswith("react"))
+    out = [(t_react - 0.1, L.marcos["historia"], (130, PREVIA_Y - 160, 950, PREVIA_Y + 160), "previa")]
+    for ta, tipo, par, obj, t_obj in L.adesivos:
+        fim_obj = t_obj + obj.dur
+        if tipo == "selo":
+            im = carimbo_seguro(par["txt"])
+            out.append((ta, fim_obj, (540 - im.width / 2, par["y"] - im.height / 2,
+                                      540 + im.width / 2, par["y"] + im.height / 2), tipo))
+        elif tipo == "perfil":                         # o cartão sobe 120 px até parar em CARTAO_Y
+            im, _ = cartao_perfil(False, CARTAO_LARG)
+            out.append((ta, L.marcos["cartao"], (540 - im.width / 2, CARTAO_Y - im.height / 2,
+                                                 540 + im.width / 2, CARTAO_Y + 120 + im.height / 2), tipo))
+        elif tipo == "titulo":
+            out.append((ta, min(ta + 3.0, fim_obj), (100, 1200, 980, 1460), tipo))
+        elif tipo == "numero":
+            out.append((ta, min(ta + 0.55, fim_obj), (380, 190, 700, 510), tipo))
+    return out
 
 
 # =====================================================================
-# Camadas por cima (ganchos, animações das reações, chamada)
+# Por cima: gancho, prévia, número de cada reação, adesivos, perfil
 # =====================================================================
 
-def camadas(marcos):
-    R = marcos["reacts"]
-    itens = []    # funções (tela, t) -> None
+def chip_react(n):
+    """'REACT #n': o número num círculo verde e a palavra numa pílula roxa."""
+    num = recortar(palavra(f"#{n}", fonte("anton", 64), ROXO_ESC))
+    txt = recortar(palavra("REACT", fonte("montserrat", 46, 900), BRANCO))
+    d = 112
+    w = d + txt.width + 70
+    im = Image.new("RGBA", (w, d), (0, 0, 0, 0))
+    dr = ImageDraw.Draw(im)
+    dr.rounded_rectangle([d // 2, 10, w - 1, d - 11], (d - 20) // 2, fill=rgba(ROXO_VIVO))
+    dr.ellipse([0, 0, d - 1, d - 1], fill=rgba(VERDE_CLARO))
+    im.alpha_composite(num, ((d - num.width) // 2, (d - num.height) // 2))
+    im.alpha_composite(txt, (d + 22, (d - txt.height) // 2))
+    return sombra(im, 14, (0, 8), 120)
+
+
+def lugar_livre(L, t0, t1, w, h, opcoes, extra=()):
+    """Primeira posição (centro) cuja caixa w x h não encosta em rosto nem nas áreas 'extra' de t0 a t1.
+    Os rostos vêm do trecho que está na tela em cada instante (t0 a t1 pode passar por mais de um corte)."""
+    rs = []
+    for t in np.linspace(t0, t1, max(4, int((t1 - t0) / 0.25) + 1)):
+        obj, t_obj = objeto_em(L, t)
+        rs += obj.rostos(t - t_obj)
+    rs += list(extra)
+    # a primeira sem nada no caminho; se nenhuma estiver livre, a que encosta em menos coisas
+    batidas = [sum(cruza((x - w / 2, y - h / 2, x + w / 2, y + h / 2), r, 16) for r in rs) for x, y in opcoes]
+    return opcoes[batidas.index(min(batidas))]
+
+
+def objeto_em(L, t):
+    i = max(i for i, (t0, _) in enumerate(L.trechos) if t0 <= t + 1e-6)
+    return L.trechos[i][1], L.trechos[i][0]
+
+
+def camadas(L):
+    itens = []
+    R0, C = L.marcos["reacoes"], L.marcos["cartao"]
 
     # gancho dos primeiros segundos
-    g1 = recortar(palavra("UMA PROPAGANDA", fonte("anton", 118), BRANCO, 8, ROXO_ESC))
-    g2 = recortar(palavra("SEM FALAR NADA", fonte("anton", 118), VERDE_CLARO, 8, ROXO_ESC))
-    g1, g2 = sombra(g1, 14, (0, 8), 150), sombra(g2, 14, (0, 8), 150)
+    g1 = sombra(recortar(palavra("UMA PROPAGANDA", fonte("anton", 118), BRANCO, 8, ROXO_ESC)), 14, (0, 8), 150)
+    g2 = sombra(recortar(palavra("SEM FALAR NADA", fonte("anton", 118), VERDE_CLARO, 8, ROXO_ESC)), 14, (0, 8), 150)
     shh = emoji("🤫", 150)
 
     def gancho(tela, t):
@@ -854,249 +973,207 @@ def camadas(marcos):
         for k, (im, y) in enumerate(((g1, 1110), (g2, 1250))):
             p = (t - 0.05 - 0.18 * k) / 0.32
             if p > 0:
-                colar(tela, im, 540 + 600 * (1 - ease_out(p)) * (-1 if k == 0 else 1), y, 1.0,
-                      lim(p * 2) * (1 - sai))
+                colar(tela, im, 540 + 600 * (1 - ease_out(p)) * (-1 if k == 0 else 1), y, 1.0, lim(p * 2) * (1 - sai))
         q = t - 0.55
         if q > 0:
-            colar(tela, shh, 540, 920, 0.4 + 0.6 * ease_back(q / 0.3), lim(q / 0.1) * (1 - sai),
-                  giro=8 * math.sin(q * 6))
+            colar(tela, shh, 540, 920, 0.4 + 0.6 * ease_back(q / 0.3), lim(q / 0.1) * (1 - sai), giro=8 * math.sin(q * 6))
     itens.append(gancho)
 
-    # "sem falar nada" (fala) -> emoji do silêncio pulando
-    def silencio(tela, t):
-        q = t - 5.62
-        if 0 < q < 1.0:
-            colar(tela, emoji("🤫", 170), 820, 560, 0.4 + 0.6 * ease_back(q / 0.25), lim(q / 0.08) * lim((1.0 - q) / 0.2),
-                  giro=-10)
-    itens.append(silencio)
-
-    # prévia das reações quando ela fala "react"
+    # prévia de três reações quando a Brenda fala "react"
+    t_react = next(s for g in L.leg.grupos for w, s in zip(g[2], g[3]) if w.startswith("react"))
     previas = []
     for nome, ts, giro, caixa in (("IMG_6500", 10.35, -8, (360, 370, 960, 1170)),
                                   ("IMG_6497", 16.0, 5, (200, 250, 800, 1050)),
                                   ("IMG_6502", 6.1, -4, (235, 255, 835, 1055))):
         fr = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-ss", str(ts), "-i", hd(nome),
-                             "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
-                            capture_output=True).stdout
-        im = Image.frombuffer("RGB", (W, H), fr, "raw", "RGB", 0, 1)
-        im = im.crop(caixa)
-        previas.append((polaroid(im, 262, 312, borda=13, base=40), giro))
+                             "-frames:v", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True).stdout
+        im = Image.frombuffer("RGB", (W, H), fr, "raw", "RGB", 0, 1).crop(caixa)
+        previas.append((polaroid(im, 236, 281, borda=12, base=36), giro))
+    H0 = L.marcos["historia"]
 
     def previa(tela, t):
-        if not (7.5 <= t < 10.3):
+        if not (t_react - 0.1 <= t < H0):
             return
         for k, (pol, giro) in enumerate(previas):
-            tk = t - 7.6 - 0.33 * k
+            tk = t - t_react - 0.33 * k
             if tk <= 0:
                 continue
             p = ease_back(tk / 0.35)
-            sai = ease_in((t - 9.95) / 0.3)
-            x = [250, 540, 830][k]
-            colar(tela, pol, x, 1320 - 30 * (1 - p) + 700 * sai, 0.5 + 0.5 * p, lim(tk / 0.1), giro=giro)
+            sai = ease_in((t - (H0 - 0.35)) / 0.3)
+            colar(tela, pol, [280, 540, 800][k], PREVIA_Y - 30 * (1 - p) + 700 * sai, 0.5 + 0.5 * p, lim(tk / 0.1),
+                  giro=giro)
     itens.append(previa)
 
-    # entrada das reações: frase de transição
-    tr1 = Texto([("Esse é o react de quem", F_TXT2, BRANCO, 0), ("come essas delícias...", F_TXT2, BRANCO, 0)], 292)
-    tr2 = Texto([("e se apaixona!", F_SCRIPT, VERDE_CLARO, 0)], 290)
-
-    def ponte(tela, t):
-        q = t - R
-        if 0 <= q < 1.27:
-            faixa_escura(tela, 165, 405, 140)
-            tr1.desenhar(tela, q, 0.0, t_out=1.05, passo=0.05)
-        elif 1.27 <= q < 2.5:
-            faixa_escura(tela, 165, 405, 140)
-            tr2.desenhar(tela, q - 1.27, 0.0, t_out=1.0, passo=0.1)
-    itens.append(ponte)
-
-    cor_vo = Coracoes(9, R + 1.3, R + 2.4, area=(150, 400, 1150, 1450), semente=8)
-    itens.append(lambda tela, t: cor_vo.desenhar(tela, t, fim=R + 3.45))
-
-    def soquinho(tela, t):
-        q = t - (R + 2.58)
-        if 0 <= q < 0.9:
-            for i in range(9):
-                a = 2 * math.pi * i / 9
-                d = 80 + 170 * ease_out(q / 0.5)
-                colar(tela, brilho(60 if i % 2 else 44), 270 + d * math.cos(a), 640 + d * math.sin(a), 1.0,
-                      lim(1 - (q - 0.4) / 0.5))
-    itens.append(soquinho)
-
-    # família: "1ª mordida"
-    mordida = pilula("1ª MORDIDA", fonte("montserrat", 46, 900), fundo=VERDE, cor=ROXO_ESC)
-
-    def primeira(tela, t):
-        q = t - (R + 4.9)
-        if 0 <= q < 1.58:
-            colar(tela, mordida, 540, 420, 0.5 + 0.5 * ease_back(q / 0.3), lim(q / 0.1) * lim((1.58 - q) / 0.15),
-                  giro=-4)
-    itens.append(primeira)
-
-    # rajada: três reações rápidas com emoji
-    rajada = [(R + 6.5, "👍", 780, 470), (R + 7.5, "🥹", 860, 420), (R + 8.5, "😍", 850, 410)]
-
-    def emojis(tela, t):
-        for t0, ch, x, y in rajada:
-            q = t - t0 - 0.12
-            if 0 <= q < 0.88:
-                colar(tela, emoji(ch, 190), x, y, 0.3 + 0.7 * ease_back(q / 0.25), lim(q / 0.06),
-                      giro=10 * math.sin(q * 8))
-    itens.append(emojis)
-    cor_raj = Coracoes(12, R + 6.6, R + 9.3, area=(160, 920, 1350, 1550), semente=12, tam=(44, 90))
-    itens.append(lambda tela, t: cor_raj.desenhar(tela, t, vida=1.2, fim=R + 9.45))
-
-    # "assistindo um filme, comia um bolo todo"
-    def filme(tela, t):
-        for t0, ch, x in ((R + 10.45, "🎂", 230), (R + 11.72, "🍿", 860)):
-            q = t - t0
-            if 0 <= q < 1.0:
-                colar(tela, emoji(ch, 150), x, 980, 0.3 + 0.7 * ease_back(q / 0.25), lim(q / 0.06) * lim((1 - q) / 0.2),
-                      giro=8 * math.sin(q * 7))
-    itens.append(filme)
-
-    # "Já queremos bolo, Nina!" em balão de mensagem por cima do bolo
-    bal = balao(["Já queremos bolo,", "Nina!"], fonte("montserrat", 60, 800))
-    t_b = marcos["bolo"]
-
-    def mensagem(tela, t):
-        q = t - (t_b + 0.15)
-        if 0 <= q < 1.85:
-            colar(tela, bal, 540, 560 + 40 * (1 - ease_out(q / 0.3)), 0.7 + 0.3 * ease_back(q / 0.3),
-                  lim(q / 0.1) * lim((1.85 - q) / 0.2))
-            colar(tela, emoji("🎂", 104), 880, 400, 0.5 + 0.5 * ease_back((q - 0.3) / 0.3),
-                  lim((q - 0.3) / 0.1) * lim((1.85 - q) / 0.2), giro=12)
-    itens.append(mensagem)
-
-    # "Aprovado, gente?" -> "APROVADÍSSIMO!"
-    t_a = marcos["aprov"]
-    perg = balao(["Aprovado, gente?"], fonte("montserrat", 56, 800), cauda="dir")
-    selo = carimbo("APROVADÍSSIMO!", VERDE_CLARO, 120)
-
-    def aprovado(tela, t):
-        q = t - t_a
-        if 0.05 <= q < 1.9:
-            colar(tela, perg, 540, 420, 0.7 + 0.3 * ease_back((q - 0.05) / 0.3), lim((q - 0.05) / 0.1) *
-                  lim((1.9 - q) / 0.2))
-        s = t - (t_a + 2.02)
-        if 0 <= s < 0.98:
-            if s < 0.12:
-                branco = Image.new("RGBA", (W, H), (255, 255, 255, int(150 * (1 - s / 0.12))))
-                tela.alpha_composite(branco)
-            if s < 0.18:
-                e = 1.8 - 0.8 * ease_out(s / 0.18)
-            elif s < 0.26:
-                e = 0.97 + 0.03 * ((s - 0.18) / 0.08)
-            else:
-                e = 1.0
-            colar(tela, selo, 540, 1150, e, lim(s / 0.05) * lim((0.98 - s) / 0.1))
-    itens.append(aprovado)
-
-    # "é um pecado" -> emoji entre os dois rostos
-    t_p = marcos["pecado"]
-
-    def pecado(tela, t):
-        r = t - (t_p + 3.45)
-        if 0 <= r < 0.55:
-            colar(tela, emoji("😋", 160), 430, 470, 0.4 + 0.6 * ease_back(r / 0.25), lim(r / 0.06), giro=-8)
-    itens.append(pecado)
-
-    # marca d'água durante as reações
+    # logo da Nina no canto durante as reações
     marca = logo(170)
+    MARCA = (145, 255, 315, 355)
 
     def marca_dagua(tela, t):
-        if R + 2.5 <= t < marcos["cta"]:
-            colar(tela, marca, 160, 250, 1.0, 0.92 * lim((t - R - 2.5) / 0.3))
+        if R0 + 0.3 <= t < C:
+            # some aos poucos quando um rosto passa por baixo (a câmera vira e a pessoa cai no canto)
+            livre = 1.0
+            for d in (-0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4):
+                tt = min(max(t + d, R0), C - 0.01)
+                obj, t_obj = objeto_em(L, tt)
+                if any(cruza(MARCA, r, 16) for r in obj.rostos(tt - t_obj)):
+                    livre = min(livre, abs(d) / 0.4)
+            colar(tela, marca, 230, 305, 1.0, 0.92 * lim((t - R0 - 0.3) / 0.3) * livre)
     itens.append(marca_dagua)
 
-    # cartão do perfil + botão seguir
-    t_c = marcos["cta"]
-    perfil, botao = cartao_perfil(False)
-    perfil_ok, _ = cartao_perfil(True)
-    dedo = emoji("👆", 130)
+    def ocupado(t0, t1):
+        """Legendas e áreas fixas (carimbo, cartão, título, contagem) na tela entre t0 e t1."""
+        return L.leg.caixas(t0, t1) + [cx for a, b, cx, _ in L.ocupados if a < t1 and t0 < b]
 
-    def chamada(tela, t):
-        q = t - (t_c + 1.0)
-        if q < 0 or t >= FIM_CTA:
-            return
-        p = ease_back(q / 0.4)
-        cart = perfil if t < FIM_CTA - 0.9 else perfil_ok
-        y = 1385 + 120 * (1 - ease_out(q / 0.4))
-        colar(tela, cart, 540, y, 0.85 + 0.15 * p, lim(q / 0.12))
-        tap = t - (FIM_CTA - 1.35)
-        if 0 <= tap < 1.2:
-            bx = 540 - perfil.width / 2 + botao[0]
-            by = y - perfil.height / 2 + botao[1]
-            ida = ease_out(tap / 0.35)
-            colar(tela, dedo, bx + 40 + 160 * (1 - ida), by + 70 + 160 * (1 - ida), 1.0 - 0.1 * (0.35 < tap < 0.5),
-                  lim(tap / 0.1) * lim((1.2 - tap) / 0.2))
-            if tap > 0.45:
-                r = ease_out((tap - 0.45) / 0.4)
-                anel = Image.new("RGBA", (300, 300), (0, 0, 0, 0))
-                ImageDraw.Draw(anel).ellipse([150 - 140 * r, 150 - 140 * r, 150 + 140 * r, 150 + 140 * r],
-                                             outline=(255, 255, 255, int(230 * (1 - r))), width=8)
-                colar(tela, anel, bx, by)
-    itens.append(chamada)
+    # número de cada reação (a pílula visível, sem a sombra, fica dentro da zona segura nas quatro posições)
+    chips = []
+    for t0, n, quem in L.unidades:
+        im = chip_react(n)
+        x, y = lugar_livre(L, t0 + 0.02, t0 + 2.0, im.width, im.height,
+                           [(560, 290), (740, 290), (560, 1470), (740, 1470)], extra=[MARCA] + ocupado(t0, t0 + 2.0))
+        chips.append((t0, im, x, y))
+    caixas_chips = [(t0 + 0.12, t0 + 2.02, (x - im.width / 2, y - im.height / 2, x + im.width / 2, y + im.height / 2))
+                    for t0, im, x, y in chips]
+
+    def numeros(tela, t):
+        for t0, im, x, y in chips:
+            q = t - t0 - 0.12
+            if 0 <= q < 1.9:
+                colar(tela, im, x, y - 50 * (1 - ease_out(q / 0.3)), 0.6 + 0.4 * ease_back(q / 0.3),
+                      lim(q / 0.1) * lim((1.9 - q) / 0.25))
+    itens.append(numeros)
+
+    # adesivos de cada trecho (emoji, brilhos, corações, contagem, carimbo, flash, título, perfil)
+    perfil, botao = cartao_perfil(False, CARTAO_LARG)
+    perfil_ok, _ = cartao_perfil(True, CARTAO_LARG)
+    dedo = emoji("👆", 130)
+    preparados = []
+    for k, (ta, tipo, par, obj, t_obj) in enumerate(L.adesivos):
+        fim_obj = t_obj + obj.dur
+        if tipo == "emoji":
+            im = emoji(par["ch"], par.get("tam", 150))
+            fim = min(ta + 1.1, fim_obj)
+            x, y = lugar_livre(L, ta, fim - 0.01, im.width, im.height,
+                               [(par["x"], par["y"]), (W - par["x"], par["y"]), (par["x"], 1450), (W - par["x"], 1450)],
+                               extra=ocupado(ta, fim) + [cx for a, b, cx in caixas_chips if a < fim and ta < b])
+            preparados.append(("emoji", ta, fim, dict(im=im, x=x, y=y)))
+        elif tipo == "brilhos":
+            preparados.append(("brilhos", ta, min(ta + 0.9, fim_obj), par))
+        elif tipo == "coracoes":
+            preparados.append(("coracoes", ta, min(ta + 1.4, fim_obj),
+                               dict(c=Coracoes(8, ta, ta + 0.7, area=par["area"], semente=40 + k, tam=(44, 80)))))
+        elif tipo == "numero":
+            im = sombra(recortar(palavra(par["txt"], fonte("anton", 230), BRANCO, 10, ROXO_ESC)), 14, (0, 8), 150)
+            preparados.append(("numero", ta, min(ta + 0.55, fim_obj), dict(im=im)))
+        elif tipo == "selo":
+            preparados.append(("selo", ta, fim_obj - 0.02, dict(im=carimbo_seguro(par["txt"]), y=par["y"])))
+        elif tipo == "flash":
+            preparados.append(("flash", ta, ta + 0.14, {}))
+        elif tipo == "titulo":
+            im = Texto([(par["linhas"][0], fonte("montserrat", 60, 900), BRANCO, 0),
+                        (par["linhas"][1], fonte("anton", 150), VERDE_CLARO, 0)], 1330)
+            preparados.append(("titulo", ta, min(ta + 3.0, fim_obj), dict(texto=im)))
+        elif tipo == "perfil":
+            preparados.append(("perfil", ta, C, {}))
+
+    def adesivos(tela, t):
+        for tipo, a, b, par in preparados:
+            if not (a <= t < b):
+                continue
+            q = t - a
+            if tipo == "emoji":
+                colar(tela, par["im"], par["x"], par["y"], 0.3 + 0.7 * ease_back(q / 0.25), lim(q / 0.06) * lim((b - t) / 0.2),
+                      giro=9 * math.sin(q * 7))
+            elif tipo == "brilhos":
+                cx, cy = par["x"], par["y"]
+                for i in range(9):
+                    ang = 2 * math.pi * i / 9 + 0.3
+                    d = 50 + 150 * ease_out(q / 0.5)
+                    colar(tela, brilho(58 if i % 2 else 42), cx + d * math.cos(ang), cy + d * math.sin(ang), 1.0,
+                          lim(1 - (q - 0.4) / 0.5))
+            elif tipo == "coracoes":
+                par["c"].desenhar(tela, t, vida=1.1, fim=b)
+            elif tipo == "numero":
+                colar(tela, par["im"], 540, 350, 0.5 + 0.6 * ease_back(q / 0.18), lim(q / 0.05) * lim((b - t) / 0.12))
+            elif tipo == "selo":
+                if q < 0.12:
+                    tela.alpha_composite(Image.new("RGBA", (W, H), (255, 255, 255, int(150 * (1 - q / 0.12)))))
+                e = 1.8 - 0.8 * ease_out(q / 0.18) if q < 0.18 else (0.97 + 0.03 * lim((q - 0.18) / 0.08))
+                colar(tela, par["im"], 540, par["y"], e, lim(q / 0.05) * lim((b - t) / 0.08))
+            elif tipo == "flash":
+                tela.alpha_composite(Image.new("RGBA", (W, H), (255, 255, 255, int(190 * (1 - q / 0.14)))))
+            elif tipo == "titulo":
+                par["texto"].desenhar(tela, q, 0.0, t_out=(b - a) - 0.25, passo=0.12)
+            elif tipo == "perfil":
+                p = ease_back(q / 0.4)
+                card = perfil if t < b - 0.9 else perfil_ok
+                y = CARTAO_Y + 120 * (1 - ease_out(q / 0.4))
+                colar(tela, card, 540, y, 0.85 + 0.15 * p, lim(q / 0.12))
+                tap = t - (b - 1.35)
+                if 0 <= tap < 1.2:
+                    bx = 540 - perfil.width / 2 + botao[0]
+                    by = y - perfil.height / 2 + botao[1]
+                    ida = ease_out(tap / 0.35)
+                    colar(tela, dedo, bx + 40 + 160 * (1 - ida), by + 70 + 160 * (1 - ida), 1.0 - 0.1 * (0.35 < tap < 0.5),
+                          lim(tap / 0.1) * lim((1.2 - tap) / 0.2))
+                    if tap > 0.45:
+                        r = ease_out((tap - 0.45) / 0.4)
+                        anel = Image.new("RGBA", (300, 300), (0, 0, 0, 0))
+                        ImageDraw.Draw(anel).ellipse([150 - 140 * r, 150 - 140 * r, 150 + 140 * r, 150 + 140 * r],
+                                                     outline=(255, 255, 255, int(230 * (1 - r))), width=8)
+                        colar(tela, anel, bx, by)
+    itens.append(adesivos)
     return itens
 
 
-def sons_da_montagem(marcos):
-    R, a = marcos["reacts"], marcos["aprov"]
-    s = [
-        (0.0, "whoosh", -14), (0.55, "pop", -16), (5.62, "shh", -16),
-        (7.0, "pop", -18), (7.35, "pop", -18), (7.7, "pop", -18), (9.95, "whoosh", -18),
-        # história
-        (ANCORA, "whoosh_sobe", -16),
-        (ANCORA + 2.0, "whoosh", -18), (ANCORA + 2.12, "obturador", -16), (ANCORA + 5.0, "whoosh", -18), (ANCORA + 5.45, "brilho", -20),
-    ]
-    b4 = ANCORA + 7.0
-    s += [(b4, "whoosh", -18)] + [(b4 + 0.12 + 0.36 * k, "obturador", -17) for k in range(5)]
-    s += [(ANCORA + 9.5, "whoosh", -18), (ANCORA + 10.75, "pop", -16), (ANCORA + 11.5, "whoosh", -18),
-          (ANCORA + 12.55, "swish", -18), (ANCORA + 13.57, "obturador", -15),
-          (ANCORA + 14.5, "whoosh", -18), (ANCORA + 15.0, "brilho", -15),
-          (marcos["loja"], "whoosh", -18), (marcos["loja"] + 0.25, "pop", -18),
-          (ANCORA + 18.5, "whoosh", -18), (ANCORA + 20.5, "obturador", -16), (ANCORA + 22.0, "whoosh", -18),
-          (ANCORA + 23.5, "whoosh_sobe", -19), (ANCORA + 24.0, "brilho", -20)]
-    # reações
-    s += [(R + 2.58, "impacto", -12), (R + 5.0, "pop", -15),
-          (R + 6.5, "pop", -14), (R + 7.5, "pop", -14), (R + 8.5, "pop", -14),
-          (R + 10.95, "pop", -16), (R + 11.95, "pop", -16),
-          (marcos["bolo"] + 0.15, "ding", -14),
-          (a + 0.05, "pop", -18), (a + 2.02, "impacto_seco", -9),
-          (marcos["pecado"] + 3.45, "pop", -16),
-          (marcos["cta"] + 1.0, "whoosh_sobe", -17), (FIM_CTA - 0.9, "clique", -12)]
+def sons(L):
+    """(t, tipo, dB) de todos os efeitos."""
+    H0, R0, C = L.marcos["historia"], L.marcos["reacoes"], L.marcos["cartao"]
+    s = [(0.0, "whoosh", -14), (0.55, "pop", -16)]
+    t_react = next(s_ for g in L.leg.grupos for w, s_ in zip(g[2], g[3]) if w.startswith("react"))
+    s += [(t_react + 0.33 * k, "pop", -18) for k in range(3)]
+    s += [(t, "whoosh" if tipo != "iris" else "whoosh_sobe", -18) for t, tipo in L.cortes if H0 - 0.01 <= t < R0]
+    s += [(H0 + 0.45, "pop", -17)]                       # símbolo da PIB
+    for t, ch in L.narr:                                 # um toque em momentos da história
+        if ch == "encontros":
+            s += [(t - 0.05 + 0.36 * k, "obturador", -18) for k in range(5)]
+        elif ch in ("danilo", "nina"):
+            s += [(t + FALAS[ch]["inicios"][-1], "swish", -19)]
+        elif ch == "juntos":
+            s += [(t + FALAS[ch]["inicios"][5], "brilho", -17)]
+        elif ch == "todos":
+            s += [(t, "obturador", -17)]
+        elif ch == "cidade":
+            s += [(t + FALAS[ch]["inicios"][4] + 0.35, "pop", -17)]
+        elif ch == "apaixonados":
+            s += [(t + FALAS[ch]["inicios"][2], "brilho", -19)]
+    for t0, n, quem in L.unidades:
+        s += [(t0 + 0.12, "pop", -16)]
+    for ta, tipo, par, obj, t_obj in L.adesivos:
+        s += {"emoji": [(ta, "pop", -17)], "brilhos": [(ta, "brilho", -16)], "numero": [(ta, "tique", -14)],
+              "selo": [(ta, "impacto_seco", -9)], "flash": [(ta, "obturador", -13)], "titulo": [(ta, "whoosh", -16)],
+              "perfil": [(ta, "whoosh_sobe", -17), (C - 0.9, "clique", -12)]}.get(tipo, [])
+    s += [(C, "brilho", -15)]
     return s
 
 
 # =====================================================================
-# Transições nos cortes
+# Transições
 # =====================================================================
-
-def transicoes(marcos):
-    """(tempo do corte, tipo)."""
-    tr = [(0.60, "flash"), (ANCORA, "iris")]
-    cortes_historia = [ANCORA + x for x in (2.0, 5.0, 7.0, 9.5, 11.5, 14.5, 16.5, 17.5, 18.5, 20.5, 22.0, 23.5)]
-    tr += [(c, "chicote") for c in cortes_historia]
-    R = marcos["reacts"]
-    tr += [(R, "flash"), (R + 3.5, "chicote"), (R + 6.5, "flash"), (R + 7.5, "flash"), (R + 8.5, "flash"),
-           (R + 9.5, "chicote"), (marcos["bolo"], "chicote"), (marcos["aprov"], "chicote"),
-           (marcos["pecado"], "chicote"), (FIM_CTA, "iris")]
-    return sorted(tr)
-
 
 def borrar_horizontal(img, k=18):
     small = img.resize((max(1, W // k), H), Image.BILINEAR)
     return small.resize((W, H), Image.BILINEAR)
 
 
-def aplicar_transicao(tela, t, tr, anterior):
-    for tc, tipo in tr:
+def aplicar_transicao(tela, t, cortes, anterior):
+    for tc, tipo in cortes:
         d = t - tc
         if tipo == "flash" and 0 <= d < 0.12:
             tela.alpha_composite(Image.new("RGBA", (W, H), (255, 255, 255, int(170 * (1 - d / 0.12)))))
         elif tipo == "chicote" and -0.07 <= d < 0.07:
             s = d / 0.07
             b = borrar_horizontal(tela)
-            dx = int(-160 * s) if d >= 0 else int(-160 * s)
+            dx = int(-160 * s)
             m = Image.new("RGBA", (W, H))
             m.paste(b, (dx, 0))
             if dx > 0:
@@ -1125,8 +1202,14 @@ def ler_audio(nome, ini, fim):
     return np.frombuffer(r, np.float32).reshape(-1, 2).T.copy()
 
 
+def ler_wav(arq):
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(arq), "-f", "f32le", "-ac", "2",
+                        "-ar", str(SR), "-"], capture_output=True, check=True).stdout
+    return np.frombuffer(r, np.float32).reshape(-1, 2).T.copy()
+
+
 def som_extra(tipo):
-    """Sons que não estão no editor: 'shh', 'brilho', 'obturador'."""
+    """Sons que não estão no editor: 'shh', 'brilho', 'obturador'. Os outros vêm do editor."""
     rng = np.random.default_rng(len(tipo))
     if tipo == "shh":
         n = int(0.6 * SR)
@@ -1148,10 +1231,9 @@ def som_extra(tipo):
     else:
         import sys
         sys.path.insert(0, "/home/user/claude")
-        from editor import sons
-        with wave.open(str(sons.arquivo(tipo))) as w:
-            a = np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).T.astype(np.float32) / 32768
-        return a
+        from editor import sons as sons_editor
+        with wave.open(str(sons_editor.arquivo(tipo))) as w:
+            return np.frombuffer(w.readframes(w.getnframes()), np.int16).reshape(-1, 2).T.astype(np.float32) / 32768
     s = s / (np.abs(s).max() + 1e-9) * 0.89
     return np.vstack([s, s]).astype(np.float32)
 
@@ -1160,39 +1242,47 @@ def db(x):
     return 10 ** (x / 20)
 
 
-def montar_audio(audios, marcos, saida):
-    n = int(DURACAO * SR)
-    voz = np.zeros((2, n), np.float32)
-    atividade = np.zeros(n, np.float32)
-    for a in audios:
-        x = ler_audio(a["nome"], a["ini"], a["fim"])
-        rms = 20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)
-        alvo = -19.0 if a["voz"] else -27.0
-        g = db(max(-12, min(12, alvo - rms)))
-        x = x * g
-        f = int(0.012 * SR)
+def nivelar(x, alvo):
+    rms = 20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)
+    return x * db(max(-12, min(12, alvo - rms)))
+
+
+def colocar(buf, x, t, fade=0.015):
+    x = x.copy()
+    f = min(int(fade * SR), x.shape[1] // 2)
+    if f > 0:
         x[:, :f] *= np.linspace(0, 1, f)
         x[:, -f:] *= np.linspace(1, 0, f)
-        i = int(round(a["t0"] * SR))
-        m = min(x.shape[1], n - i)
-        voz[:, i:i + m] += x[:, :m]
+    i = int(round(t * SR))
+    m = min(x.shape[1], buf.shape[1] - i)
+    if m > 0 and i >= 0:
+        buf[:, i:i + m] += x[:, :m]
+
+
+def montar_audio(L, saida):
+    n = int(L.marcos["fim"] * SR)
+    voz = np.zeros((2, n), np.float32)
+    atividade = np.zeros(n, np.float32)
+    for a in L.audios:
+        x = ler_audio(a["nome"], a["ini"], a["fim"])
+        if a.get("sem_som"):
+            s0, s1 = (int((v - a["ini"]) * SR) for v in a["sem_som"])
+            x[:, max(0, s0):max(0, s1)] = 0
+        colocar(voz, nivelar(x, -19.0 if a["voz"] else -27.0), a["t0"])
         if a["voz"]:
-            for w in json.load(open(PASTA / "proxy" / f"{a['nome']}.large-v3.json")):
-                for p in w["w"]:
-                    if a["ini"] <= (p["s"] + p["e"]) / 2 <= a["fim"]:
-                        s0 = int((a["t0"] + p["s"] - a["ini"]) * SR)
-                        s1 = int((a["t0"] + p["e"] - a["ini"]) * SR)
-                        atividade[max(0, s0):max(0, min(n, s1))] = 1
-    # música: volume por seção e abaixando quando tem fala
-    secoes = [(0, ANCORA, "intro"), (ANCORA, marcos["reacts"], "historia"), (marcos["reacts"], marcos["cta"], "reacts"),
-              (marcos["cta"], FIM_CTA, "cta"), (FIM_CTA, DURACAO + 1, "cta")]
-    mus = musica.gerar(DURACAO, ANCORA, secoes[:-1], final_em=FIM_CTA)
+            atividade[int(a["t0"] * SR):int((a["t0"] + a["fim"] - a["ini"]) * SR)] = 1
+    for t, ch in L.narr:
+        x = nivelar(ler_wav(narracao.SAIDA / f"{ch}.wav"), -18.5)
+        colocar(voz, x, t, fade=0.005)
+        atividade[int(t * SR):int((t + x.shape[1] / SR) * SR)] = 1
+    # música: volume por parte e abaixando quando tem fala
+    H0, R0, F, C = L.marcos["historia"], L.marcos["reacoes"], L.marcos["final"], L.marcos["cartao"]
+    secoes = [(0, H0, "intro"), (H0, R0, "historia"), (R0, F, "reacts"), (F, C, "cta")]
+    mus = musica.gerar(L.marcos["fim"], H0, secoes, final_em=C)
     nivel = np.zeros(n, np.float32)
     for a_, b_, e in secoes:
-        i0, i1 = int(a_ * SR), min(n, int(b_ * SR))
-        nivel[i0:i1] = {"intro": -12, "historia": -4, "reacts": -9, "cta": -12}[e]
-    nivel[int(FIM_CTA * SR):] = -3
-    # suaviza a atividade de fala (ataque 80 ms, solta 350 ms)
+        nivel[int(a_ * SR):min(n, int(b_ * SR))] = {"intro": -12, "historia": -8, "reacts": -9, "cta": -12}[e]
+    nivel[int(C * SR):] = -3
     env = np.zeros(n, np.float32)
     v = 0.0
     passo = 240
@@ -1200,24 +1290,18 @@ def montar_audio(audios, marcos, saida):
         alvo = atividade[i:i + passo].max()
         v = v + (alvo - v) * (0.6 if alvo > v else 0.12)
         env[i:i + passo] = v
-    duck = -9.0 * env
-    ganho = db(nivel + duck)
-    mus = mus[:, :n] * ganho
+    mus = mus[:, :n] * db(nivel - 10.0 * env)
     sfx = np.zeros((2, n), np.float32)
-    for t, tipo, nivel_db in sons_da_montagem(marcos):
-        x = som_extra(tipo) * db(nivel_db + 1)
-        i = int(round(t * SR))
-        m = min(x.shape[1], n - i)
-        if m > 0:
-            sfx[:, i:i + m] += x[:, :m]
+    for t, tipo, nivel_db in sons(L):
+        colocar(sfx, som_extra(tipo) * db(nivel_db + 1), t, fade=0.002)
     mix = voz + mus + sfx
+    pico = np.abs(mix).max()
+    if pico > 0.98:
+        mix = mix / pico * 0.98
     with wave.open(str(saida), "wb") as w:
         w.setnchannels(2)
         w.setsampwidth(2)
         w.setframerate(SR)
-        pico = np.abs(mix).max()
-        if pico > 0.98:
-            mix = mix / pico * 0.98
         w.writeframes((mix.T * 32767).astype(np.int16).tobytes())
     return saida
 
@@ -1226,7 +1310,6 @@ def normalizar(entrada, saida):
     r = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(entrada), "-af",
                         "loudnorm=I=-14:TP=-2:LRA=11:print_format=json", "-f", "null", "-"],
                        capture_output=True, text=True)
-    import re
     m = json.loads(re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", r.stderr).group(0))
     subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(entrada), "-af",
                     f"loudnorm=I=-14:TP=-2:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
@@ -1238,20 +1321,25 @@ def normalizar(entrada, saida):
 # Render
 # =====================================================================
 
-def render(de=0.0, ate=DURACAO, saida=None, rapido=False, so_audio=False):
-    trechos, audios, leg, marcos = montar_linha()
+def quadro(L, itens, t, anterior):
+    obj, t0 = objeto_em(L, t)
+    tela = obj.quadro(t - t0)
+    for f in itens:
+        f(tela, t)
+    L.leg.desenhar(tela, t)
+    return aplicar_transicao(tela, t, L.cortes, anterior)
+
+
+def render(de=0.0, ate=None, saida=None, rapido=False):
+    L = montar_linha()
+    ate = min(ate or L.marcos["fim"], L.marcos["fim"])
     saida = saida or PASTA / "final.mp4"
     tmp = PASTA / "render"
     tmp.mkdir(exist_ok=True)
-    audio_bruto = tmp / "audio_bruto.wav"
-    audio_final = tmp / "audio_final.wav"
-    montar_audio(audios, marcos, audio_bruto)
-    normalizar(audio_bruto, audio_final)
-    if so_audio:
-        return audio_final
-    itens = camadas(marcos)
-    tr = transicoes(marcos)
-    ocultar_leg = [(0.0, 2.95), (marcos["bolo"], marcos["bolo"] + 2.0)]
+    montar_audio(L, tmp / "audio_bruto.wav")
+    normalizar(tmp / "audio_bruto.wav", tmp / "audio_final.wav")
+    itens = camadas(L)
+    rostos.salvar()
     video_tmp = tmp / "video.mp4"
     enc = subprocess.Popen(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
                             "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-vf", "noise=alls=2:allf=t,format=yuv420p",
@@ -1259,35 +1347,29 @@ def render(de=0.0, ate=DURACAO, saida=None, rapido=False, so_audio=False):
                             "-maxrate", "10M", "-bufsize", "20M", "-profile:v", "high", "-level", "4.1",
                             str(video_tmp)], stdin=subprocess.PIPE)
     anterior = {}
-    cortes_iris = [tc for tc, tp in tr if tp == "iris"]
-    q0, q1 = int(round(de * FPS)), int(round(ate * FPS))
+    cortes_iris = [tc for tc, tp in L.cortes if tp == "iris"]
     ativo = None
-    for q in range(q0, q1):
+    for q in range(int(round(de * FPS)), int(round(ate * FPS))):
         t = q / FPS
-        idx = max(i for i, (t0, _) in enumerate(trechos) if t0 <= t + 1e-6)
-        t0, obj = trechos[idx]
+        obj, _ = objeto_em(L, t)
         if ativo is not obj:
             if ativo is not None:
                 ativo.fechar()
             ativo = obj
             ativo.abrir()
-        tela = obj.quadro(t - t0)
-        for f in itens:
-            f(tela, t)
-        leg.desenhar(tela, t, ocultar_leg)
-        tela = aplicar_transicao(tela, t, tr, anterior)
+        tela = quadro(L, itens, t, anterior)
         for tc in cortes_iris:
             if tc - 1 / FPS - 1e-6 <= t < tc - 1e-6:
                 anterior[tc] = tela.copy()
         enc.stdin.write(tela.convert("RGB").tobytes())
-        if q % 150 == 0:
+        if q % 300 == 0:
             print(f"  {t:5.1f}s", flush=True)
     if ativo is not None:
         ativo.fechar()
     enc.stdin.close()
     enc.wait()
     subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", str(video_tmp),
-                    "-ss", f"{de:.3f}", "-t", f"{ate - de:.3f}", "-i", str(audio_final),
+                    "-ss", f"{de:.3f}", "-t", f"{ate - de:.3f}", "-i", str(tmp / "audio_final.wav"),
                     "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
                     "-movflags", "+faststart", "-shortest", str(saida)], check=True)
     return saida
@@ -1296,11 +1378,10 @@ def render(de=0.0, ate=DURACAO, saida=None, rapido=False, so_audio=False):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--de", type=float, default=0.0)
-    ap.add_argument("--ate", type=float, default=DURACAO)
+    ap.add_argument("--ate", type=float)
     ap.add_argument("--saida")
     ap.add_argument("--rapido", action="store_true")
-    ap.add_argument("--so-audio", action="store_true")
     a = ap.parse_args()
     import time
     ini = time.time()
-    print(render(a.de, a.ate, a.saida, a.rapido, a.so_audio), f"{time.time() - ini:.0f}s")
+    print(render(a.de, a.ate, a.saida, a.rapido), f"{time.time() - ini:.0f}s")
