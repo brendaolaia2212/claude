@@ -94,6 +94,7 @@ Olhe a folha de quadros (`final` já gera uma; leia a imagem): rosto livre, text
 O container é apagado depois de um tempo. O que precisa durar fica no git:
 
 - Estilo aprovado: `python -m editor salvar-estilo <nome>`, depois commit e push de `perfil/estilo.json`.
+- Links de inspiração que ela manda ficam em `perfil/inspiracoes.md` (leia o combinado no topo: quando ela pedir um tutorial, mande os links antes de editar).
 - Uma linha por vídeo entregue em `perfil/historico.md` (data, tema, estilo, duração), também com commit e push.
 
 A Brenda autoriza commit e push desses arquivos de `perfil/` sem perguntar. Vídeos e a pasta `trabalho/` nunca vão pro git.
