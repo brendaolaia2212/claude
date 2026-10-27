@@ -1,8 +1,17 @@
 """Transcrição com tempo por palavra (faster-whisper) e silêncios (ffmpeg)."""
 import json
 import re
+import wave
 
 from .base import pasta, ler_edicao, rodar
+
+
+def _ler_wav(caminho):
+    """16 kHz mono em float32. O faster-whisper não abre o arquivo sozinho com o PyAV mais novo."""
+    import numpy as np
+
+    with wave.open(str(caminho)) as w:
+        return np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
 
 
 def transcrever(nome, modelo="small"):
@@ -15,7 +24,7 @@ def transcrever(nome, modelo="small"):
            "-vn", "-ac", "1", "-ar", "16000", str(wav)])
     m = WhisperModel(modelo, device="cpu", compute_type="int8")
     dica = ed.get("nomes_dificeis") or None
-    segs, _ = m.transcribe(str(wav), language="pt", word_timestamps=True, vad_filter=True,
+    segs, _ = m.transcribe(_ler_wav(wav), language="pt", word_timestamps=True, vad_filter=True,
                            vad_parameters={"min_silence_duration_ms": 250},
                            initial_prompt=(", ".join(dica) if dica else None))
     palavras = []

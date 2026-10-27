@@ -1,0 +1,1896 @@
+[
+ {
+  "tipo": "abertura",
+  "ini": 0.0,
+  "fim": 5.4,
+  "titulo": "Escala inteligente de vendas",
+  "sub": "Da primeira venda à repetição estratégica"
+ },
+ {
+  "tipo": "texto",
+  "ini": 9.64,
+  "fim": 16.22,
+  "texto": "Afiliados e criadores do TikTok Shop",
+  "estilo": "rodape"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 15.6,
+  "fim": 21.14,
+  "escala": 1.12
+ },
+ {
+  "tipo": "texto",
+  "ini": 26.06,
+  "fim": 32.54,
+  "texto": "Baixe o material complementar",
+  "estilo": "rodape"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 57.31,
+  "fim": 59.51,
+  "escala": 1.12
+ },
+ {
+  "tipo": "texto",
+  "ini": 78.95,
+  "fim": 82.43,
+  "texto": "Algoritmo do TikTok Shop",
+  "estilo": "palavra"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 89.27,
+  "fim": 92.43,
+  "escala": 1.12
+ },
+ {
+  "tipo": "texto",
+  "ini": 94.59,
+  "fim": 99.47,
+  "texto": "Aula gravada pra você revisitar",
+  "estilo": "rodape"
+ },
+ {
+  "tipo": "texto",
+  "ini": 129.21,
+  "fim": 135.41,
+  "texto": "Criar, editar, publicar… e torcer?",
+  "estilo": "titulo"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 134.43,
+  "fim": 137.59,
+  "escala": 1.15
+ },
+ {
+  "tipo": "texto",
+  "ini": 137.49,
+  "fim": 145.57,
+  "texto": "Use os resultados pra decidir o próximo vídeo",
+  "estilo": "rodape"
+ },
+ {
+  "tipo": "texto",
+  "ini": 153.8,
+  "fim": 158.86,
+  "texto": "Analisar e replicar o que funciona",
+  "estilo": "palavra"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 178.54,
+  "fim": 182.12,
+  "escala": 1.12
+ },
+ {
+  "tipo": "texto",
+  "ini": 193.39,
+  "fim": 197.63,
+  "texto": "Afiliado sem estratégia",
+  "estilo": "palavra"
+ },
+ {
+  "tipo": "texto",
+  "ini": 202.43,
+  "fim": 205.51,
+  "texto": "Recomeça do zero",
+  "estilo": "palavra"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 213.52,
+  "fim": 218.14,
+  "escala": 1.15
+ },
+ {
+  "tipo": "texto",
+  "ini": 242.34,
+  "fim": 248.56,
+  "texto": "Otimizar a produção",
+  "estilo": "palavra"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 253.53,
+  "fim": 261.21,
+  "escala": 1.12
+ },
+ {
+  "tipo": "texto",
+  "ini": 258.93,
+  "fim": 263.31,
+  "texto": "Transformar a venda em informação",
+  "estilo": "rodape"
+ },
+ {
+  "tipo": "texto",
+  "ini": 270.55,
+  "fim": 273.37,
+  "texto": "Informação → decisão",
+  "estilo": "titulo"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 273.49,
+  "fim": 278.71,
+  "escala": 1.12
+ },
+ {
+  "tipo": "texto",
+  "ini": 273.49,
+  "fim": 278.91,
+  "texto": "Consciente, organizada, sustentável",
+  "estilo": "rodape"
+ },
+ {
+  "tipo": "zoom",
+  "ini": 300.47,
+  "fim": 302.09,
+  "escala": 1.1
+ },
+ {
+  "tipo": "texto",
+  "ini": 307.75,
+  "fim": 311.21,
+  "texto": "O slide é o seu mapa",
+  "estilo": "palavra"
+ },
+ {
+  "tipo": "slide",
+  "ini": 315.67,
+  "fim": 328.78,
+  "slide": 1,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 331.28,
+  "fim": 422.55,
+  "modelo": "comparacao",
+  "dados": {
+   "titulo": "Escalar não é publicar mais",
+   "esq": {
+    "titulo": "NÃO É",
+    "t": 333.46,
+    "itens": [
+     {
+      "txt": "Publicar mais",
+      "t": 336.56
+     },
+     {
+      "txt": "10 por dia sem entender nada",
+      "t": 391.27
+     }
+    ]
+   },
+   "dir": {
+    "titulo": "É",
+    "t": 354.3,
+    "itens": [
+     {
+      "txt": "Concentrar o esforço no que dá sinal",
+      "t": 357.36
+     },
+     {
+      "txt": "3 por dia, aprendendo com os dados",
+      "t": 401.45
+     }
+    ]
+   }
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 440.26,
+  "fim": 462.5,
+  "slide": 2,
+  "modo": "dividida",
+  "recorte": [
+   80,
+   140,
+   1300,
+   1000
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 462.5,
+  "fim": 524.53,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "Saiu uma venda? Investigue",
+   "itens": [
+    {
+     "txt": "Qual foi o produto?",
+     "t": 491.3
+    },
+    {
+     "txt": "Qual foi a primeira cena?",
+     "t": 493.1
+    },
+    {
+     "txt": "Qual gancho eu usei?",
+     "t": 495.34
+    },
+    {
+     "txt": "Que problema eu resolvi?",
+     "t": 504.74
+    },
+    {
+     "txt": "O vídeo prendeu a atenção?",
+     "t": 514.45
+    },
+    {
+     "txt": "Qual foi o CTA?",
+     "t": 518.95
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 524.53,
+  "fim": 577.61,
+  "modelo": "fluxo",
+  "dados": {
+   "titulo": "A primeira venda é só o começo",
+   "passos": [
+    {
+     "txt": "Saiu uma venda",
+     "t": 527.27,
+     "sub": "uma combinação de fatores"
+    },
+    {
+     "txt": "Não é certeza absoluta",
+     "t": 539.3
+    },
+    {
+     "txt": "É uma fonte de ensino",
+     "t": 547.53
+    },
+    {
+     "txt": "Analise e replique o que funcionou",
+     "t": 552.41
+    }
+   ],
+   "nota": "É o começo de uma investigação",
+   "t_nota": 570.27
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 577.61,
+  "fim": 670.63,
+  "slide": 3,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 602.44,
+    "caixa": [
+     -35,
+     430,
+     645,
+     830
+    ]
+   },
+   {
+    "t": 628.29,
+    "caixa": [
+     414,
+     430,
+     1094,
+     830
+    ]
+   },
+   {
+    "t": 637.06,
+    "caixa": [
+     863,
+     430,
+     1543,
+     830
+    ]
+   },
+   {
+    "t": 665.02,
+    "caixa": [
+     1312,
+     430,
+     1992,
+     830
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 670.63,
+  "fim": 693.54,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "Divida a sua produção",
+   "itens": [
+    {
+     "txt": "5 vídeos por dia: 3 de escala e 2 de teste",
+     "t": 674.89
+    },
+    {
+     "txt": "10 vídeos por dia: 5 de escala e 5 de teste",
+     "t": 685.46
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 693.54,
+  "fim": 744.32,
+  "modelo": "comparacao",
+  "dados": {
+   "titulo": "Repetir não é copiar",
+   "esq": {
+    "titulo": "COPIAR",
+    "t": 700.66,
+    "itens": [
+     {
+      "txt": "Baixar o vídeo e postar de novo",
+      "t": 702.22
+     },
+     {
+      "txt": "Leva punição",
+      "t": 703.52
+     }
+    ]
+   },
+   "dir": {
+    "titulo": "REPETIR",
+    "t": 705.16,
+    "itens": [
+     {
+      "txt": "Mesma copy, legenda e narração",
+      "t": 708.66
+     },
+     {
+      "txt": "Outra cor do produto",
+      "t": 716.13
+     },
+     {
+      "txt": "Sem cor? Troque o cenário",
+      "t": 721.81
+     }
+    ]
+   }
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 744.32,
+  "fim": 807.92,
+  "slide": 4,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 754.08,
+    "caixa": [
+     80,
+     380,
+     1080,
+     942
+    ]
+   },
+   {
+    "t": 765.72,
+    "caixa": [
+     940,
+     380,
+     1940,
+     942
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 807.92,
+  "fim": 830.53,
+  "slide": 5,
+  "modo": "dividida",
+  "recorte": [
+   80,
+   140,
+   1280,
+   470
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 830.53,
+  "fim": 882.93,
+  "modelo": "comparacao",
+  "dados": {
+   "titulo": "Pra quem é o seu vídeo?",
+   "esq": {
+    "titulo": "PRO SEU GOSTO",
+    "t": 850.17,
+    "itens": [
+     {
+      "txt": "Criar do jeito que eu gosto",
+      "t": 850.97
+     }
+    ]
+   },
+   "dir": {
+    "titulo": "PRA QUEM COMPRA",
+    "t": 854.77,
+    "itens": [
+     {
+      "txt": "Pensar em quem vai comprar",
+      "t": 854.77
+     },
+     {
+      "txt": "Um público direcionado",
+      "t": 862.18
+     }
+    ]
+   }
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 882.93,
+  "fim": 898.05,
+  "slide": 24,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 898.05,
+  "fim": 947.03,
+  "modelo": "analogia",
+  "dados": {
+   "titulo": "Uma bolsa, dois públicos",
+   "personagens": [
+    {
+     "nome": "Trabalhadora",
+     "acao": "coisas de trabalho dentro da bolsa",
+     "icone": "sacola",
+     "t": 909.85
+    },
+    {
+     "nome": "Universitária",
+     "acao": "coisas da faculdade dentro da bolsa",
+     "icone": "sacola",
+     "t": 913.61
+    }
+   ],
+   "setas": [
+    "mesma bolsa"
+   ]
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 947.03,
+  "fim": 984.54,
+  "slide": 25,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 949.35,
+    "caixa": [
+     1140,
+     400,
+     1940,
+     850
+    ]
+   },
+   {
+    "t": 951.55,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 965.77,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 984.54,
+  "fim": 1001.41,
+  "slide": 6,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1001.41,
+  "fim": 1041.68,
+  "modelo": "fluxo",
+  "dados": {
+   "titulo": "Se pular uma etapa…",
+   "passos": [
+    {
+     "txt": "Testar sem observar",
+     "t": 1001.79,
+     "sub": "vira ansiedade"
+    },
+    {
+     "txt": "Observar sem validar",
+     "t": 1007.59,
+     "sub": "vira opinião"
+    },
+    {
+     "txt": "Validar sem variar",
+     "t": 1012.39,
+     "sub": "vira repetição"
+    },
+    {
+     "txt": "Variar sem medir",
+     "t": 1016.81,
+     "sub": "impede o aprendizado"
+    },
+    {
+     "txt": "Medir sem decidir",
+     "t": 1021.81,
+     "sub": "dado parado e esquecido"
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1041.68,
+  "fim": 1091.06,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "A receita do bolo",
+   "itens": [
+    {
+     "txt": "Deu certo? Não jogue a receita fora",
+     "t": 1049.66
+    },
+    {
+     "txt": "Registre os ingredientes e a quantidade",
+     "t": 1052.1
+    },
+    {
+     "txt": "Veja o que deixou o bolo fofinho",
+     "t": 1059.18
+    },
+    {
+     "txt": "Na próxima, só uma pequena mudança",
+     "t": 1077.52
+    }
+   ]
+  },
+  "fundo": "claro"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1091.06,
+  "fim": 1107.38,
+  "modelo": "equivale",
+  "dados": {
+   "pares": [
+    {
+     "a": "Vídeo que vendeu",
+     "b": "a receita do bolo",
+     "t": 1096.46
+    }
+   ],
+   "rotulo_a": "na escala",
+   "rotulo_b": "é como"
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1107.38,
+  "fim": 1182.64,
+  "modelo": "fluxo",
+  "dados": {
+   "titulo": "Seu perfil já vende? Faça assim",
+   "passos": [
+    {
+     "txt": "Veja os últimos 7 dias",
+     "t": 1123.18
+    },
+    {
+     "txt": "Ache os vídeos que venderam",
+     "t": 1125.12
+    },
+    {
+     "txt": "Replique formato e narração",
+     "t": 1146.54
+    },
+    {
+     "txt": "Mude só cor ou cenário",
+     "t": 1163.51
+    }
+   ],
+   "nota": "Pra não levar punição por conteúdo não original",
+   "t_nota": 1170.89
+  }
+ },
+ {
+  "tipo": "videos",
+  "ini": 1182.64,
+  "fim": 1239.13,
+  "arquivos": [
+   "extras/exemplo1.mov",
+   "extras/exemplo2.mov",
+   "extras/exemplo3.mov",
+   "extras/exemplo4.mp4",
+   "extras/exemplo5.mov"
+  ],
+  "rotulos": [
+   "Original",
+   "Variação 1",
+   "Variação 2",
+   "Variação 3",
+   "Variação 4"
+  ],
+  "titulo": "A mesma blusa, cinco vídeos",
+  "modo": "cheia",
+  "destaques": [
+   {
+    "t": 1184.14,
+    "texto": "Mesma blusa, outras cores",
+    "alvo": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "t": 1189.44,
+    "texto": "Mantém: o estilo POV, só as mãos e a blusa",
+    "alvo": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "t": 1193.36,
+    "texto": "Muda: a cor da blusa",
+    "alvo": [
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   {
+    "t": 1199.47,
+    "texto": "Começam a sair vendas de outras cores"
+   },
+   {
+    "t": 1205.23,
+    "texto": "Vários vídeos do mesmo produto vendendo"
+   },
+   {
+    "t": 1220.15,
+    "texto": "Mantém: a mesma ideia de headline",
+    "alvo": [
+     1,
+     5
+    ]
+   },
+   {
+    "t": 1230.99,
+    "texto": "Muda: a cena, a ordem, o cabide",
+    "alvo": [
+     3,
+     4
+    ]
+   },
+   {
+    "t": 1232.0,
+    "texto": "Depois de um tempo, 4 dos 5 vídeos passaram a vender todo dia"
+   },
+   {
+    "t": 1236.23,
+    "texto": "É assim que você escala"
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 1262.43,
+  "fim": 1280.61,
+  "slide": 8,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "slide",
+  "ini": 1280.61,
+  "fim": 1311.65,
+  "slide": 7,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 1280.91,
+    "caixa": [
+     80,
+     380,
+     1080,
+     942
+    ]
+   },
+   {
+    "t": 1287.57,
+    "caixa": [
+     940,
+     380,
+     1940,
+     942
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1311.65,
+  "fim": 1356.87,
+  "modelo": "fluxo",
+  "dados": {
+   "titulo": "Depois da primeira venda",
+   "passos": [
+    {
+     "txt": "Divida a sua produção",
+     "t": 1320.85
+    },
+    {
+     "txt": "Replique o que funcionou",
+     "t": 1322.75
+    },
+    {
+     "txt": "Continue testando",
+     "t": 1325.89
+    },
+    {
+     "txt": "O perfil vai ganhando um formato",
+     "t": 1351.85
+    }
+   ],
+   "nota": "O TikTok entrega o vídeo pra quem vai comprar",
+   "t_nota": 1331.21
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1356.87,
+  "fim": 1421.5,
+  "modelo": "ciclo",
+  "dados": {
+   "titulo": "A fórmula que deu certo",
+   "etapas": [
+    {
+     "txt": "Um vídeo estourou",
+     "t": 1374.67
+    },
+    {
+     "txt": "Mesmo ângulo e movimentos",
+     "t": 1384.25
+    },
+    {
+     "txt": "Testou e validou",
+     "t": 1397.85
+    },
+    {
+     "txt": "Replicou com várias roupas",
+     "t": 1399.97
+    }
+   ],
+   "centro": "replicar"
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 1454.54,
+  "fim": 1506.76,
+  "slide": 8,
+  "modo": "dividida",
+  "nota": "Três é um ponto de partida, não uma regra"
+ },
+ {
+  "tipo": "slide",
+  "ini": 1506.76,
+  "fim": 1561.48,
+  "slide": 9,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 1516.9,
+    "caixa": [
+     80,
+     380,
+     1080,
+     942
+    ]
+   },
+   {
+    "t": 1521.24,
+    "caixa": [
+     940,
+     380,
+     1940,
+     942
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1561.48,
+  "fim": 1631.84,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "Não existe um único jeito",
+   "itens": [
+    {
+     "txt": "Mantenha a sua identidade",
+     "t": 1562.54
+    },
+    {
+     "txt": "Teste estilos diferentes",
+     "t": 1565.64
+    },
+    {
+     "txt": "Replique o que está funcionando",
+     "t": 1583.45
+    },
+    {
+     "txt": "Cada perfil é um perfil",
+     "t": 1611.19
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 1631.84,
+  "fim": 1687.62,
+  "slide": 10,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 1663.9,
+    "caixa": [
+     1140,
+     400,
+     1940,
+     850
+    ]
+   },
+   {
+    "t": 1668.7,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   },
+   {
+    "t": 1670.7,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 1678.2,
+    "caixa": [
+     1140,
+     400,
+     1940,
+     850
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1687.62,
+  "fim": 1744.98,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "Que dúvida do comprador o vídeo responde?",
+   "itens": [
+    {
+     "txt": "Cabe? Fecha?",
+     "t": 1699.2
+    },
+    {
+     "txt": "É resistente? É fácil de usar?",
+     "t": 1700.9
+    },
+    {
+     "txt": "O fecho é bom?",
+     "t": 1722.66
+    },
+    {
+     "txt": "A costura é boa?",
+     "t": 1724.6
+    },
+    {
+     "txt": "Qual o tecido? E o caimento?",
+     "t": 1728.24
+    },
+    {
+     "txt": "O que dizem as avaliações?",
+     "t": 1734.1
+    }
+   ]
+  },
+  "fundo": "claro"
+ },
+ {
+  "tipo": "slide",
+  "ini": 1744.98,
+  "fim": 1787.07,
+  "slide": 11,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 1747.88,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   },
+   {
+    "t": 1751.94,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 1752.74,
+    "caixa": [
+     1140,
+     400,
+     1940,
+     850
+    ]
+   },
+   {
+    "t": 1753.98,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 1754.86,
+    "caixa": [
+     1140,
+     400,
+     1940,
+     850
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 1787.07,
+  "fim": 1820.3,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "Mostre o produto de verdade",
+   "itens": [
+    {
+     "txt": "A experiência de uso",
+     "t": 1795.27
+    },
+    {
+     "txt": "O resultado e o caimento",
+     "t": 1797.59
+    },
+    {
+     "txt": "Os detalhes",
+     "t": 1799.75
+    },
+    {
+     "txt": "O que os clientes falam nas avaliações",
+     "t": 1805.59
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 1820.3,
+  "fim": 1872.91,
+  "slide": 12,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 1829.64,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   },
+   {
+    "t": 1833.07,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 1840.91,
+    "caixa": [
+     1140,
+     400,
+     1940,
+     850
+    ]
+   },
+   {
+    "t": 1854.41,
+    "caixa": [
+     0,
+     0,
+     2001,
+     1125
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 1872.91,
+  "fim": 1896.06,
+  "slide": 13,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 1880.11,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   },
+   {
+    "t": 1885.55,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 1896.06,
+  "fim": 1908.64,
+  "slide": 14,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "slide",
+  "ini": 1908.64,
+  "fim": 1970.66,
+  "slide": 26,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 1918.86,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   },
+   {
+    "t": 1923.56,
+    "caixa": [
+     1140,
+     400,
+     1940,
+     850
+    ]
+   },
+   {
+    "t": 1932.17,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 1949.6,
+    "caixa": [
+     0,
+     0,
+     2001,
+     1125
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 1970.66,
+  "fim": 2009.22,
+  "slide": 15,
+  "modo": "dividida",
+  "recorte": [
+   80,
+   140,
+   1700,
+   1000
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 2009.22,
+  "fim": 2015.16,
+  "slide": 16,
+  "modo": "dividida",
+  "recorte": [
+   80,
+   140,
+   1300,
+   1000
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2015.16,
+  "fim": 2026.48,
+  "modelo": "equivale",
+  "dados": {
+   "titulo": "Mesma coisa, outro nome",
+   "pares": [
+    {
+     "a": "Conteúdos atribuídos",
+     "b": "o vídeo que fez a venda",
+     "t": 2015.16
+    },
+    {
+     "a": "Área de afiliados",
+     "b": "painel de criador",
+     "t": 2024.0
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "imagem",
+  "ini": 2026.48,
+  "fim": 2030.68,
+  "arquivo": "extras/dados_tiktok.png",
+  "recorte": [
+   0,
+   1150,
+   1320,
+   2400
+  ],
+  "destaque": [
+   30,
+   1232,
+   1290,
+   1765
+  ],
+  "t_destaque": 2027.66,
+  "seta": true,
+  "texto": "Desempenho do conteúdo: de qual vídeo saem as vendas"
+ },
+ {
+  "tipo": "imagem",
+  "ini": 2030.68,
+  "fim": 2057.58,
+  "arquivo": "extras/dados_tiktok.png",
+  "recorte": [
+   0,
+   1150,
+   1320,
+   2400
+  ],
+  "destaque": [
+   30,
+   1880,
+   1290,
+   2240
+  ],
+  "t_destaque": 2030.68,
+  "seta": true,
+  "texto": "Achou o vídeo que vendeu: é ele que você vai replicar"
+ },
+ {
+  "tipo": "slide",
+  "ini": 2057.58,
+  "fim": 2118.17,
+  "slide": 18,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 2078.06,
+    "caixa": [
+     80,
+     380,
+     1080,
+     942
+    ]
+   },
+   {
+    "t": 2079.28,
+    "caixa": [
+     940,
+     380,
+     1940,
+     942
+    ]
+   },
+   {
+    "t": 2081.64,
+    "caixa": [
+     80,
+     380,
+     1080,
+     942
+    ]
+   },
+   {
+    "t": 2085.5,
+    "caixa": [
+     940,
+     380,
+     1940,
+     942
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2118.17,
+  "fim": 2134.93,
+  "modelo": "equivale",
+  "dados": {
+   "pares": [
+    {
+     "a": "A ficha do vídeo que vendeu",
+     "b": "ficha de anamnese",
+     "t": 2118.17
+    }
+   ],
+   "rotulo_a": "no slide",
+   "rotulo_b": "ela chama de"
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2146.54,
+  "fim": 2194.88,
+  "modelo": "comparacao",
+  "dados": {
+   "titulo": "Qual vídeo replicar?",
+   "esq": {
+    "titulo": "MUITA VISUALIZAÇÃO",
+    "t": 2147.22,
+    "itens": [
+     {
+      "txt": "Não sai venda",
+      "t": 2149.84
+     }
+    ]
+   },
+   "dir": {
+    "titulo": "MAIS PEDIDOS",
+    "t": 2160.27,
+    "itens": [
+     {
+      "txt": "O que está saindo venda",
+      "t": 2160.81
+     },
+     {
+      "txt": "Menos visualização e mais pedido vale mais",
+      "t": 2172.78
+     }
+    ]
+   }
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 2194.88,
+  "fim": 2228.32,
+  "slide": 20,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 2198.64,
+    "caixa": [
+     80,
+     380,
+     1080,
+     942
+    ]
+   },
+   {
+    "t": 2212.85,
+    "caixa": [
+     940,
+     380,
+     1940,
+     942
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 2228.32,
+  "fim": 2268.09,
+  "slide": 21,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "slide",
+  "ini": 2268.09,
+  "fim": 2322.89,
+  "slide": 22,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 2268.09,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   },
+   {
+    "t": 2299.09,
+    "caixa": [
+     0,
+     0,
+     2001,
+     1125
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 2322.89,
+  "fim": 2363.43,
+  "slide": 23,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 2332.54,
+    "caixa": [
+     80,
+     380,
+     1080,
+     942
+    ]
+   },
+   {
+    "t": 2358.77,
+    "caixa": [
+     940,
+     380,
+     1940,
+     942
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 2363.43,
+  "fim": 2416.94,
+  "slide": 25,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 2364.53,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   },
+   {
+    "t": 2366.17,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 2368.43,
+    "caixa": [
+     1140,
+     400,
+     1940,
+     850
+    ]
+   },
+   {
+    "t": 2374.11,
+    "caixa": [
+     0,
+     0,
+     2001,
+     1125
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2416.94,
+  "fim": 2459.51,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "Mude uma coisa por vez",
+   "itens": [
+    {
+     "txt": "Mesmo cenário",
+     "t": 2421.08
+    },
+    {
+     "txt": "Mesmo ângulo e enquadramento",
+     "t": 2422.48
+    },
+    {
+     "txt": "Muda só a bolsa",
+     "t": 2425.36
+    },
+    {
+     "txt": "Observe o que faz diferença",
+     "t": 2438.1
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2508.79,
+  "fim": 2524.72,
+  "modelo": "numero",
+  "dados": {
+   "valor": "5",
+   "rotulo": "vídeos por dia, sem falhar",
+   "t": 2510.65
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 2524.72,
+  "fim": 2538.53,
+  "slide": 28,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "slide",
+  "ini": 2538.53,
+  "fim": 2566.51,
+  "slide": 29,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2566.51,
+  "fim": 2645.57,
+  "modelo": "analogia",
+  "dados": {
+   "titulo": "Como o vídeo passa a vender todo dia",
+   "personagens": [
+    {
+     "nome": "Maria",
+     "acao": "publica o vídeo da bolsa",
+     "icone": "video",
+     "t": 2590.56
+    },
+    {
+     "nome": "Joana",
+     "acao": "assiste e compra a bolsa",
+     "icone": "sacola",
+     "t": 2596.06
+    },
+    {
+     "nome": "Parecidas com Joana",
+     "acao": "gostam das mesmas coisas e também compram",
+     "icone": "coracao",
+     "t": 2606.52
+    }
+   ],
+   "setas": [
+    "o TikTok entrega",
+    "o TikTok procura pessoas parecidas"
+   ]
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 2645.57,
+  "fim": 2664.74,
+  "slide": 29,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "slide",
+  "ini": 2664.74,
+  "fim": 2749.85,
+  "slide": 30,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "slide",
+  "ini": 2749.85,
+  "fim": 2787.38,
+  "slide": 31,
+  "modo": "dividida",
+  "passeio": [
+   {
+    "t": 2768.43,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 2769.87,
+    "caixa": [
+     80,
+     400,
+     880,
+     850
+    ]
+   },
+   {
+    "t": 2773.91,
+    "caixa": [
+     600,
+     400,
+     1400,
+     850
+    ]
+   },
+   {
+    "t": 2777.36,
+    "caixa": [
+     0,
+     0,
+     2001,
+     1125
+    ]
+   }
+  ]
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2787.38,
+  "fim": 2816.36,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "O nosso trabalho como afiliado",
+   "itens": [
+    {
+     "txt": "Conteúdo relevante pro algoritmo",
+     "t": 2790.08
+    },
+    {
+     "txt": "Demonstração clara pro comprador",
+     "t": 2793.02
+    },
+    {
+     "txt": "Experiência positiva pro público",
+     "t": 2795.6
+    },
+    {
+     "txt": "Analisar os nossos resultados",
+     "t": 2800.7
+    }
+   ]
+  },
+  "fundo": "claro"
+ },
+ {
+  "tipo": "slide",
+  "ini": 2816.36,
+  "fim": 2875.44,
+  "slide": 32,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "slide",
+  "ini": 2875.44,
+  "fim": 2887.56,
+  "slide": 33,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2887.56,
+  "fim": 2894.23,
+  "modelo": "equivale",
+  "dados": {
+   "titulo": "Mesma coisa, outro nome",
+   "pares": [
+    {
+     "a": "Variações",
+     "b": "réplicas",
+     "t": 2887.56
+    },
+    {
+     "a": "Exploração",
+     "b": "testes",
+     "t": 2888.46
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 2894.23,
+  "fim": 2951.11,
+  "slide": 35,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 2951.11,
+  "fim": 3026.58,
+  "modelo": "fluxo",
+  "dados": {
+   "titulo": "Registre os seus resultados",
+   "passos": [
+    {
+     "txt": "Analise os últimos 7 dias",
+     "t": 2953.31
+    },
+    {
+     "txt": "Depois, anote todo dia",
+     "t": 2958.31
+    },
+    {
+     "txt": "Saiba o que o algoritmo entrega no seu perfil",
+     "t": 2970.52
+    }
+   ],
+   "nota": "Profissionais estratégicos evitam ansiedade",
+   "t_nota": 2981.24
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 3026.58,
+  "fim": 3067.52,
+  "slide": 38,
+  "modo": "dividida",
+  "recorte": [
+   80,
+   140,
+   1300,
+   1000
+  ]
+ },
+ {
+  "tipo": "slide",
+  "ini": 3067.52,
+  "fim": 3088.5,
+  "slide": 39,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "slide",
+  "ini": 3138.78,
+  "fim": 3165.64,
+  "slide": 44,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 3165.64,
+  "fim": 3236.1,
+  "modelo": "analogia",
+  "dados": {
+   "titulo": "Cada comprador quer ver uma coisa",
+   "personagens": [
+    {
+     "nome": "Chave de fenda",
+     "acao": "quer ver sendo usada",
+     "icone": "olho",
+     "t": 3190.48
+    },
+    {
+     "nome": "Panela",
+     "acao": "quer saber se descasca",
+     "icone": "lupa",
+     "t": 3202.81
+    },
+    {
+     "nome": "Roupa",
+     "acao": "quer ver a costura de perto",
+     "icone": "lupa",
+     "t": 3214.83
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 3236.1,
+  "fim": 3249.2,
+  "slide": 45,
+  "modo": "dividida"
+ },
+ {
+  "tipo": "esquema",
+  "ini": 3249.2,
+  "fim": 3290.4,
+  "modelo": "comparacao",
+  "dados": {
+   "titulo": "O que é esta aula",
+   "esq": {
+    "titulo": "NÃO É",
+    "t": 3250.08,
+    "itens": [
+     {
+      "txt": "Promessa",
+      "t": 3250.08
+     },
+     {
+      "txt": "Fórmula mágica",
+      "t": 3250.98
+     },
+     {
+      "txt": "Renda garantida",
+      "t": 3253.94
+     }
+    ]
+   },
+   "dir": {
+    "titulo": "É",
+    "t": 3259.58,
+    "itens": [
+     {
+      "txt": "A minha visão de escala",
+      "t": 3259.58
+     },
+     {
+      "txt": "Uma estrutura pra otimizar o seu trabalho",
+      "t": 3271.38
+     }
+    ]
+   }
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 3339.0,
+  "fim": 3355.8,
+  "modelo": "lista",
+  "dados": {
+   "titulo": "Vale pra qualquer perfil",
+   "itens": [
+    {
+     "txt": "Qualquer nicho",
+     "t": 3340.42
+    },
+    {
+     "txt": "Qualquer estilo e formato",
+     "t": 3342.8
+    },
+    {
+     "txt": "Qualquer produto",
+     "t": 3345.06
+    },
+    {
+     "txt": "Saiba o que funciona no seu perfil",
+     "t": 3348.2
+    }
+   ]
+  }
+ },
+ {
+  "tipo": "esquema",
+  "ini": 3400.29,
+  "fim": 3451.92,
+  "modelo": "fluxo",
+  "dados": {
+   "titulo": "A primeira venda é só o início",
+   "passos": [
+    {
+     "txt": "Observe com honestidade",
+     "t": 3423.36
+    },
+    {
+     "txt": "Registre com disciplina",
+     "t": 3424.88
+    },
+    {
+     "txt": "Varie com originalidade",
+     "t": 3431.92
+    },
+    {
+     "txt": "Meça com calma",
+     "t": 3434.58
+    }
+   ],
+   "nota": "Estrategista do seu próprio perfil",
+   "t_nota": 3444.7
+  }
+ },
+ {
+  "tipo": "slide",
+  "ini": 3451.92,
+  "fim": 3461.79,
+  "slide": 39,
+  "modo": "canto"
+ }
+]
