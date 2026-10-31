@@ -5,6 +5,17 @@ import re
 from .base import pasta, ler_edicao, rodar
 
 
+def _ler_wav(wav):
+    """WAV 16 kHz mono 16 bits → float32 em [-1, 1], como o faster-whisper espera."""
+    import wave
+
+    import numpy as np
+
+    with wave.open(str(wav), "rb") as f:
+        bruto = f.readframes(f.getnframes())
+    return np.frombuffer(bruto, dtype=np.int16).astype(np.float32) / 32768.0
+
+
 def transcrever(nome, modelo="small"):
     from faster_whisper import WhisperModel
 
@@ -12,10 +23,12 @@ def transcrever(nome, modelo="small"):
     ed = ler_edicao(nome)
     wav = p / "voz16k.wav"
     rodar(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-i", ed["original"],
-           "-vn", "-ac", "1", "-ar", "16000", str(wav)])
+           "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(wav)])
     m = WhisperModel(modelo, device="cpu", compute_type="int8")
     dica = ed.get("nomes_dificeis") or None
-    segs, _ = m.transcribe(str(wav), language="pt", word_timestamps=True, vad_filter=True,
+    # Passa o áudio já decodificado: o decodificador interno do faster-whisper
+    # quebra com versões novas do PyAV (19+ não aceita metadata_errors).
+    segs, _ = m.transcribe(_ler_wav(wav), language="pt", word_timestamps=True, vad_filter=True,
                            vad_parameters={"min_silence_duration_ms": 250},
                            initial_prompt=(", ".join(dica) if dica else None))
     palavras = []
