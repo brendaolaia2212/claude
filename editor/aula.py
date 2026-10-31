@@ -765,9 +765,12 @@ SX, SY, SW, SH = 40, 112, 1488, 837       # slide
 CX, CY, CW, CH = 1560, 112, 320, 837      # coluna dela
 
 
-def tela_slide(frame, ev, t, ctx, caminho):
+def tela_slide(frame, ev, t, ctx, caminho, camera=None, saida=True):
+    """frame: o que já está na tela; camera: o quadro dela (pra coluna);
+    saida=False quando outro slide entra logo depois (sem voltar pro vídeo dela no meio)."""
     cv2 = _cv2()
-    k = presenca(t, ev["inicio"], ev["fim"], 0.45, 0.35)
+    camera = frame if camera is None else camera
+    k = presenca(t, ev["inicio"], ev["fim"], 0.45, 0.35 if saida else 0)
     if k <= 0:
         return frame
     cx, cy = ctx["rosto"].centro(t)
@@ -775,7 +778,7 @@ def tela_slide(frame, ev, t, ctx, caminho):
     alt = A
     larg = int(alt * CW / CH)
     x0 = int(min(max(0, cx - larg / 2), L - larg))
-    col = cv2.resize(frame[:, x0:x0 + larg], (CW, CH), interpolation=cv2.INTER_AREA)
+    col = cv2.resize(camera[:, x0:x0 + larg], (CW, CH), interpolation=cv2.INTER_AREA)
     tela = _fundo_slides().copy()
     m = np.zeros((CH, CW), np.uint8)
     cv2.rectangle(m, (0, 0), (CW - 1, CH - 1), 255, -1)
@@ -809,7 +812,8 @@ class Aula:
                 ev["_centro"] = self.rosto.centro(ev["inicio"] + 0.1)
 
     def ativos(self, t, tipo):
-        return [e for e in self.eventos if e["tipo"] == tipo and e["inicio"] <= t < e["fim"]]
+        return sorted([e for e in self.eventos if e["tipo"] == tipo and e["inicio"] <= t < e["fim"]],
+                      key=lambda e: e["inicio"])
 
     def quadro(self, frame, t):
         slides = self.ativos(t, "slide")
@@ -828,9 +832,11 @@ class Aula:
                 anel_orbita(frame, ev, t, self.ctx)
             elif ev["efeito"] == "particulas":
                 particulas(frame, ev, t)
-        for ev in slides:
+        camera = frame
+        for i, ev in enumerate(slides):      # slides em ordem de entrada
             frame = tela_slide(frame, ev, t, self.ctx,
-                               self.slides / f"{ev['deck']}-{ev['pagina']:02d}.png")
+                               self.slides / f"{ev['deck']}-{ev['pagina']:02d}.png",
+                               camera=camera, saida=(i == len(slides) - 1))
         # abertura de capítulo e etiqueta fixa
         for ev in self.ativos(t, "capitulo"):
             tr = t - ev["inicio"]
