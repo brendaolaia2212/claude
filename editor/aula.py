@@ -1082,6 +1082,14 @@ def ancorar(nome):
     caps = sorted([e for e in eventos if e["tipo"] == "capitulo"], key=lambda e: e["inicio"])
     for a, b in zip(caps, caps[1:] + [None]):
         a["fim"] = round(b["inicio"] - 0.15 if b else D, 3)
+    # slide que começa junto com um capítulo espera a abertura do capítulo terminar
+    for e in eventos:
+        if e["tipo"] != "slide":
+            continue
+        for c in caps:
+            ab = c.get("abertura", 3.2)
+            if c["inicio"] - 0.5 <= e["inicio"] < c["inicio"] + ab and e["fim"] - (c["inicio"] + ab) >= 3:
+                e["inicio"] = round(c["inicio"] + ab - 0.2, 3)
     # efeito de câmera não briga com slide
     slides = [(e["inicio"], e["fim"]) for e in eventos if e["tipo"] == "slide"]
     avisos = []
