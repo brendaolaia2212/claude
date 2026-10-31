@@ -35,8 +35,8 @@ Tudo roda com `python -m editor <comando>` na raiz do repositório. Cada vídeo 
 | `planejar <nome>` | Plano de corte em poucas linhas (pausas, tomadas repetidas, muletas) |
 | `montar <nome>` | Gera `corte.mp4` (1080x1920, 30 qps) e acha o rosto |
 | `tirar <nome> 0:03 0:05` | Tira um trecho do corte (tempo do corte que ela viu). Depois rode `montar` de novo |
-| `texto <nome> [--palavras]` | A fala do corte em frases com tempo (base pro gancho e pras animações) |
-| `mostruario <nome> --tipo legenda\|gancho [--cor rosa] [--opcoes a,b] [--texto "..."] [--t 0:05]` | Uma imagem com as opções de estilo aplicadas num quadro do vídeo dela |
+| `texto <nome> [--palavras] [--original]` | A fala do corte em frases com tempo (base pro gancho e pras animações) |
+| `mostruario <nome> --tipo legenda\|gancho [--cor rosa] [--fundo "#0D2B3E"] [--opcoes a,b] [--texto "..."] [--t 0:05]` | Uma imagem com as opções de estilo aplicadas num quadro do vídeo dela |
 | `sugerir <nome> [--ritmo poucas\|medias\|nenhuma]` | Candidatos de animação lidos da fala (você revisa antes de mostrar) |
 | `amostra <nome>` | Primeiros ~10 s com tudo aplicado (+ trecho da 1ª animação/tela dividida) |
 | `final <nome>` | Vídeo completo + conferência (duração, quadros, frases que a Meta reprova) |
@@ -45,10 +45,22 @@ Tudo roda com `python -m editor <comando>` na raiz do repositório. Cada vídeo 
 | `estado <nome> "linha"` | Anota uma decisão na memória do vídeo |
 | `salvar-estilo <nome>` / `usar-estilo <nome>` | Guarda / aplica o estilo aprovado (`perfil/estilo.json`) |
 | `situacao <nome>` | O que já existe e o que foi decidido |
+| `aula <nome> [--trechos 0:00-0:30,5:10-5:40]` | Aula 16:9 pro YouTube: prende o roteiro (`aula.roteiro`) nas palavras e desenha legenda, capítulos, slides, termos e efeitos de câmera. Com `--trechos` faz a amostra; sem, o vídeo inteiro + capítulos pro YouTube |
 
 Na primeira vez da conversa, se `python -c "import faster_whisper, cv2, PIL"` falhar, rode `bash scripts/preparar.sh` (diga só "Estou preparando as ferramentas, leva uns minutos só na primeira vez"). Se faltar internet pra baixar, diga: "Preciso de acesso à internet pra baixar as ferramentas. Libera nas configurações do ambiente e me avisa."
 
 Anexos que ela manda ficam em `/root/.claude/uploads/`. Se o anexo de vídeo não chegar (arquivo grande demais), peça um link do Google Drive com "qualquer pessoa com o link pode ver".
+
+### Aula ou vídeo pro YouTube (16:9)
+
+Quando ela mandar uma aula ou pedir "versão YouTube": `"formato": "16:9"` no `edicao.json` antes de `montar` (o corte sai 1920x1080). Os PDFs de slides vão em `aula.decks` (`{"nome": "/caminho.pdf"}`). Leia a transcrição inteira e escreva `aula.roteiro`, cada item preso às palavras dela (índices da `transcricao.json`, `de`/`ate`):
+
+- `{"tipo": "capitulo", "de": 118, "numero": "01", "titulo": "...", "sub": "...", "curto": "..."}` (abertura animada + etiqueta no canto; vai até o próximo capítulo)
+- `{"tipo": "slide", "de": 282, "ate": 337, "deck": "ocultos", "pagina": 4}` (a página ao lado dela, quando ela explica o que está no slide)
+- `{"tipo": "termo", "de": 561, "ate": 590, "termo": "/orbit", "texto": "o que significa"}`
+- `{"tipo": "camera", "de": 581, "ate": 590, "efeito": "orbit"}`: o efeito no próprio vídeo dela, com desenho do movimento. Efeitos: `dollyin dollyout orbit tracking pan tilt craneup handheld static pov macro closeup mediumshot wideshot shallowdepth deepfocus rackfocus slowmotion speedramp hyperlapse softlight goldenhour cinematic naturaldaylight motionblur glitch vhs particulas glow reveal 9:16 16:9`.
+
+Palavra ouvida errado: corrija em `transcricao.json` antes de `planejar` sem apagar entradas (junte trocando o texto da primeira e deixando as outras com `""`), pra os índices não mudarem. Cortes decididos lendo a fala: `"tirar_palavras": [[i, j], ...]`. Amostra com `aula --trechos`, vídeo inteiro com `aula`. Entregue também a lista de capítulos pro texto do YouTube. Se ela disser que não precisa de amostra, vá direto pro vídeo inteiro (mas confira a folha de quadros antes). O envio pelo chat aceita no máximo 400 MB e daqui não dá pra subir no Drive dela: pra vídeo longo, gere a cópia de envio com `aula.para_envio(nome)` (Full HD, ~360 MB, duas passadas; 34 min levam uns 40 min) e mande essa. Ela pode salvar no Drive pelo compartilhar do celular.
 
 ### O arquivo `edicao.json`
 
@@ -56,7 +68,7 @@ Você edita esse arquivo direto (com as ferramentas de arquivo) a cada decisão 
 
 ```json
 {
-  "estilo": {"legenda": "pulso", "gancho": "vidro", "cor": "rosa", "zoom": true, "animacoes": "poucas", "sons": true},
+  "estilo": {"legenda": "pulso", "gancho": "vidro", "cor": "rosa", "fundo": "#0D2B3E", "zoom": true, "animacoes": "poucas", "sons": true},
   "gancho": {"texto": "Descanso não é\npreguiça", "inicio": 0, "fim": 2.8},
   "animacoes": [
     {"tipo": "impacto", "texto": "medo", "inicio": 9.2, "fim": 10.2},
@@ -81,8 +93,9 @@ Você edita esse arquivo direto (com as ferramentas de arquivo) a cada decisão 
 
 - Legendas: `impacto`, `caixa`, `gigante`, `pulso`, `fita`, `papelaria`, `discreta`, `nenhuma`. Ganchos: `manchete`, `tarjas`, `balao`, `marcatexto`, `vidro`. Ela escolhe pelos nomes de `docs/estilos.md`.
 - Cor: nome em português ("rosa", "nude", "champagne", "azul bebê") ou código `#RRGGBB`.
+- `fundo` (opcional): cor dos painéis escuros (gancho Vidro escuro, legendas Fita e Discreta, lista no tema escuro). Sem ele, ficam quase pretos. Vídeo sobre a empresa dela ou IA: `"cor": "#FF6A00"`, `"fundo": "#0D2B3E"` (paleta da marca, `perfil/cria-ai/paleta-videos.md`).
 - Sons: `whoosh`, `whoosh_sobe`, `swish`, `pop`, `clique`, `tique`, `ding`, `impacto`, `impacto_seco`, `rabisco`, `teclado`. Cada animação já traz o seu.
-- `nomes_dificeis` entra antes de `transcrever` (ajuda a ouvir marca e produto).
+- `nomes_dificeis` entra antes de `transcrever` (ajuda a ouvir marca e produto). Em vídeo de IA, ponha "IA", "Cria Aí!" e "prompt".
 - Sem `chamada`, o vídeo termina sem cartão (é o padrão pra ela, ver `voz/voz-no-editor.md`).
 
 ### Antes de mandar qualquer vídeo

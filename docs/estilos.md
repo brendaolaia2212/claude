@@ -28,6 +28,8 @@ A palavra que está sendo falada sempre muda pra cor de destaque.
 
 Diga o nome ("amarelo", "rosa", "rosa claro", "nude", "champagne", "dourado", "lilás", "azul bebê", "verde limão", "terracota", "vinho"...) ou o código (#FFC400). Padrão: amarelo.
 
+Vídeos sobre o Cria Aí! e sobre IA: azul e laranja da marca (laranja nos destaques, azul petróleo nos painéis).
+
 ## Animações
 
 Poucas (uma a cada 10 a 15 s), médias (uma a cada 5 a 8 s) ou nenhuma.

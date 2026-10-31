@@ -90,11 +90,12 @@ def olhar_final(nome, arquivo="final.mp4"):
             "folha": folha}
 
 
-def mostruario(nome, tipo="legenda", t=None, cor=None, opcoes=None, texto=None):
+def mostruario(nome, tipo="legenda", t=None, cor=None, opcoes=None, texto=None, fundo=None):
     """Um quadro do vídeo com cada opção de estilo, lado a lado, pra escolher pelo nome."""
     p = pasta(nome)
     ed = ler_edicao(nome)
     destaque = cor or ed.get("estilo", {}).get("cor", COR_PADRAO)
+    fundo = fundo or ed.get("estilo", {}).get("fundo")
     video = p / ("corte.mp4" if (p / "corte.mp4").exists() else "original")
     if not video.exists():
         video = ed["original"]
@@ -114,10 +115,10 @@ def mostruario(nome, tipo="legenda", t=None, cor=None, opcoes=None, texto=None):
     for n in nomes:
         img = quadro.copy()
         if tipo == "legenda":
-            b = bloco_legenda(n, perto, min(1, len(perto) - 1), destaque)
+            b = bloco_legenda(n, perto, min(1, len(perto) - 1), destaque, fundo=fundo)
             img.alpha_composite(b, ((LARGURA - b.width) // 2 if n != "fita" else 120, 1180 - b.height // 2))
         else:
-            b = bloco_gancho(n, gtexto, destaque)
+            b = bloco_gancho(n, gtexto, destaque, fundo)
             img.alpha_composite(b, ((LARGURA - b.width) // 2, 260))
         img = img.convert("RGB").resize((360, 640))
         d = ImageDraw.Draw(img)
