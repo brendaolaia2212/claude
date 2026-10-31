@@ -1092,10 +1092,20 @@ def ancorar(nome):
                 e["inicio"] = round(c["inicio"] + ab - 0.2, 3)
     # efeito de câmera não briga com slide
     slides = [(e["inicio"], e["fim"]) for e in eventos if e["tipo"] == "slide"]
-    avisos = []
+    avisos, fora = [], []
     for e in eventos:
-        if e["tipo"] == "camera" and any(a < e["fim"] and e["inicio"] < b for a, b in slides):
-            avisos.append(f"efeito {e['efeito']} em {mmss(e['inicio'])} cai em cima de um slide")
+        if e["tipo"] != "camera":
+            continue
+        for a, b in slides:
+            if a < e["fim"] and e["inicio"] < b:
+                if e["inicio"] < a:           # o efeito termina quando o slide entra
+                    e["fim"] = round(a, 3)
+                else:                         # ou começa quando o slide sai
+                    e["inicio"] = round(b, 3)
+        if e["fim"] - e["inicio"] < 0.4:
+            fora.append(e)
+            avisos.append(f"efeito {e['efeito']} em {mmss(e['inicio'])} saiu (sem espaço entre slides)")
+    eventos = [e for e in eventos if e not in fora]
     cfg["eventos"] = sorted(eventos, key=lambda e: e["inicio"])
     salvar_edicao(nome, ed)
     return len(eventos), avisos
