@@ -35,8 +35,8 @@ Tudo roda com `python -m editor <comando>` na raiz do repositório. Cada vídeo 
 | `planejar <nome>` | Plano de corte em poucas linhas (pausas, tomadas repetidas, muletas) |
 | `montar <nome>` | Gera `corte.mp4` (1080x1920, 30 qps) e acha o rosto |
 | `tirar <nome> 0:03 0:05` | Tira um trecho do corte (tempo do corte que ela viu). Depois rode `montar` de novo |
-| `texto <nome> [--palavras]` | A fala do corte em frases com tempo (base pro gancho e pras animações) |
-| `mostruario <nome> --tipo legenda\|gancho [--cor rosa] [--opcoes a,b] [--texto "..."] [--t 0:05]` | Uma imagem com as opções de estilo aplicadas num quadro do vídeo dela |
+| `texto <nome> [--palavras] [--original]` | A fala do corte em frases com tempo (base pro gancho e pras animações) |
+| `mostruario <nome> --tipo legenda\|gancho [--cor rosa] [--fundo "#0D2B3E"] [--opcoes a,b] [--texto "..."] [--t 0:05]` | Uma imagem com as opções de estilo aplicadas num quadro do vídeo dela |
 | `sugerir <nome> [--ritmo poucas\|medias\|nenhuma]` | Candidatos de animação lidos da fala (você revisa antes de mostrar) |
 | `amostra <nome>` | Primeiros ~10 s com tudo aplicado (+ trecho da 1ª animação/tela dividida) |
 | `final <nome>` | Vídeo completo + conferência (duração, quadros, frases que a Meta reprova) |
@@ -56,7 +56,7 @@ Você edita esse arquivo direto (com as ferramentas de arquivo) a cada decisão 
 
 ```json
 {
-  "estilo": {"legenda": "pulso", "gancho": "vidro", "cor": "rosa", "zoom": true, "animacoes": "poucas", "sons": true},
+  "estilo": {"legenda": "pulso", "gancho": "vidro", "cor": "rosa", "fundo": "#0D2B3E", "zoom": true, "animacoes": "poucas", "sons": true},
   "gancho": {"texto": "Descanso não é\npreguiça", "inicio": 0, "fim": 2.8},
   "animacoes": [
     {"tipo": "impacto", "texto": "medo", "inicio": 9.2, "fim": 10.2},
@@ -81,8 +81,9 @@ Você edita esse arquivo direto (com as ferramentas de arquivo) a cada decisão 
 
 - Legendas: `impacto`, `caixa`, `gigante`, `pulso`, `fita`, `papelaria`, `discreta`, `nenhuma`. Ganchos: `manchete`, `tarjas`, `balao`, `marcatexto`, `vidro`. Ela escolhe pelos nomes de `docs/estilos.md`.
 - Cor: nome em português ("rosa", "nude", "champagne", "azul bebê") ou código `#RRGGBB`.
+- `fundo` (opcional): cor dos painéis escuros (gancho Vidro escuro, legendas Fita e Discreta, lista no tema escuro). Sem ele, ficam quase pretos. Vídeo sobre a empresa dela ou IA: `"cor": "#FF6A00"`, `"fundo": "#0D2B3E"` (paleta da marca, `perfil/cria-ai/paleta-videos.md`).
 - Sons: `whoosh`, `whoosh_sobe`, `swish`, `pop`, `clique`, `tique`, `ding`, `impacto`, `impacto_seco`, `rabisco`, `teclado`. Cada animação já traz o seu.
-- `nomes_dificeis` entra antes de `transcrever` (ajuda a ouvir marca e produto).
+- `nomes_dificeis` entra antes de `transcrever` (ajuda a ouvir marca e produto). Em vídeo de IA, ponha "IA", "Cria Aí!" e "prompt".
 - Sem `chamada`, o vídeo termina sem cartão (é o padrão pra ela, ver `voz/voz-no-editor.md`).
 
 ### Antes de mandar qualquer vídeo

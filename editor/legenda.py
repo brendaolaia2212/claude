@@ -120,7 +120,7 @@ class Camada:
 
 
 def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=(), deslocar=0.0,
-                  y_fixo=(), bloqueios=()):
+                  y_fixo=(), bloqueios=(), fundo=None):
     """Coloca a legenda inteira numa Camada. oculto = intervalos sem legenda;
     y_fixo = [(ini, fim, y)] pra trechos de tela dividida (legenda na emenda das metades);
     bloqueios = [(ini, fim, y0, y1)] faixas ocupadas por animações."""
@@ -135,7 +135,7 @@ def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=
                     fim = a
         if fim - ini < 0.04:
             continue
-        bloco = bloco_legenda(estilo, textos, ativa, destaque, revelar=revelar)
+        bloco = bloco_legenda(estilo, textos, ativa, destaque, revelar=revelar, fundo=fundo)
         fixo = next((y for a, b, y in y_fixo if ini < b and fim > a), None)
         ocupado = [(y0, y1) for a, b, y0, y1 in bloqueios if ini < b and fim > a]
         y = fixo if fixo is not None else \

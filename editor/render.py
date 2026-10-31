@@ -26,7 +26,8 @@ def _gancho(camada, ed, rostos, ini, D):
     if g1 <= 0 or g0 >= D:
         return []
     estilo = ed["estilo"].get("gancho", "manchete")
-    bloco = bloco_gancho(estilo, g["texto"], ed["estilo"].get("cor", COR_PADRAO))
+    bloco = bloco_gancho(estilo, g["texto"], ed["estilo"].get("cor", COR_PADRAO),
+                         ed["estilo"].get("fundo"))
     topo = 260
     zona = rostos.zona(g0 + ini, g1 + ini) if rostos else None
     if zona and topo + bloco.height > zona[1] - 20:
@@ -115,7 +116,8 @@ def render_parte(nome, ini, fim, saida, rapido=False):
         if a["inicio"] < ini - 0.05 or a["inicio"] >= fim:
             continue
         mov = tmp / f"anim{k:02d}.mov"
-        x, y, W, H, sons_a, dur_a = animacoes.renderizar(a, destaque, mov, rostos.zona(a["inicio"], a["fim"]))
+        x, y, W, H, sons_a, dur_a = animacoes.renderizar(a, destaque, mov, rostos.zona(a["inicio"], a["fim"]),
+                                                        est.get("fundo"))
         t0 = a["inicio"] - ini
         anims.append((mov, x, y, t0, min(D, t0 + dur_a)))
         if a["tipo"] != "chamada":
@@ -130,7 +132,8 @@ def render_parte(nome, ini, fim, saida, rapido=False):
     if est.get("legenda", "impacto") != "nenhuma":
         cam = Camada(tmp / "legenda")
         montar_camada(cam, palavras, est.get("legenda", "impacto"), destaque, rostos, D,
-                      oculto=oculto, deslocar=ini, y_fixo=y_fixo, bloqueios=bloqueios)
+                      oculto=oculto, deslocar=ini, y_fixo=y_fixo, bloqueios=bloqueios,
+                      fundo=est.get("fundo"))
         entradas += ["-f", "concat", "-safe", "0", "-i", str(cam.lista(D))]
         filtros.append(f"{atual}[{n_in}:v]overlay=0:0:format=auto[vl]")
         atual, n_in = "[vl]", n_in + 1

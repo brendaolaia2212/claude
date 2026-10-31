@@ -27,6 +27,9 @@ CORES = {
     "roxo": "#8E5CFF", "lilas": "#C9A7FF", "lilás": "#C9A7FF", "branco": "#FFFFFF",
     "dourado": "#D4AF37", "nude": "#E8C4A8", "bege": "#E9D8C0", "vinho": "#8E1F3A",
     "champagne": "#F1DDBF", "terracota": "#C8643B", "preto": "#111111",
+    # paleta da marca (Cria Aí! e vídeos de IA): perfil/cria-ai/paleta-videos.md
+    "azul petroleo": "#0D2B3E", "azul petróleo": "#0D2B3E", "azul profundo": "#071E2B",
+    "azul medio": "#124559", "azul médio": "#124559",
 }
 
 
@@ -91,6 +94,11 @@ def cor(valor, alfa=255):
     if not re.fullmatch(r"[0-9a-fA-F]{6}", v):
         raise ValueError(f"Cor que não entendi: {valor}")
     return (int(v[0:2], 16), int(v[2:4], 16), int(v[4:6], 16), alfa)
+
+
+def cor_painel(fundo, padrao, alfa):
+    """Cor dos painéis escuros: a do estilo ("fundo") ou o quase-preto padrão do elemento."""
+    return cor(fundo, alfa) if fundo else tuple(padrao[:3]) + (alfa,)
 
 
 def texto_escuro_sobre(c):

@@ -1,7 +1,7 @@
 """Desenho das legendas e dos ganchos, pelos nomes da lista de estilos."""
 from PIL import Image, ImageDraw, ImageFilter
 
-from .base import ZONA_X, cor, fonte, texto_escuro_sobre
+from .base import ZONA_X, cor, cor_painel, fonte, texto_escuro_sobre
 
 LARG_MAX = ZONA_X[1] - ZONA_X[0]   # 800 px
 BRANCO = (255, 255, 255, 255)
@@ -119,7 +119,7 @@ def _ajustar(palavras, criar, tam, larg_max=LARG_MAX, linhas_max=2, minimo=0.6):
         t *= 0.92
 
 
-def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False):
+def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False, fundo=None):
     """Uma 'foto' da legenda: grupo de palavras com a palavra falada (ativa) destacada."""
     estilo = nome_estilo(estilo)
     c = cor(destaque)
@@ -158,7 +158,7 @@ def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False):
                               larg_max=LARG_MAX - 80)
         caixa = txt.getchannel("A").getbbox() or (0, 0, txt.width, txt.height)
         txt = txt.crop(caixa)
-        fita = Image.new("RGBA", (txt.width + 64, txt.height + 40), (10, 10, 10, 240))
+        fita = Image.new("RGBA", (txt.width + 64, txt.height + 40), cor_painel(fundo, (10, 10, 10), 240))
         fita.alpha_composite(txt, (32, 20))
         return fita.rotate(4, expand=True, resample=Image.BICUBIC)
 
@@ -179,7 +179,7 @@ def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False):
         txt = txt.crop(caixa)
         faixa = Image.new("RGBA", (txt.width + 56, txt.height + 40), (0, 0, 0, 0))
         ImageDraw.Draw(faixa).rounded_rectangle([0, 0, faixa.width - 1, faixa.height - 1], 20,
-                                                fill=(0, 0, 0, 150))
+                                                fill=cor_painel(fundo, (0, 0, 0), 150))
         faixa.alpha_composite(txt, (28, 20))
         return faixa
 
@@ -191,7 +191,7 @@ def _recortar(img):
     return img.crop(caixa) if caixa else img
 
 
-def bloco_gancho(estilo, texto, destaque):
+def bloco_gancho(estilo, texto, destaque, fundo=None):
     """Gancho escrito do começo. texto com até 2 linhas (quebre com \\n)."""
     estilo = nome_estilo(estilo)
     c = cor(destaque)
@@ -266,7 +266,7 @@ def bloco_gancho(estilo, texto, destaque):
         W, H = t.width + 100, t.height + 110
         painel = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         d = ImageDraw.Draw(painel)
-        d.rounded_rectangle([0, 0, W - 1, H - 1], 30, fill=(14, 14, 18, 185),
+        d.rounded_rectangle([0, 0, W - 1, H - 1], 30, fill=cor_painel(fundo, (14, 14, 18), 185),
                             outline=(255, 255, 255, 40), width=2)
         d.rounded_rectangle([50, 34, 170, 44], 5, fill=c)
         painel.alpha_composite(t, (50, 72))

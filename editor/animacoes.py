@@ -5,7 +5,7 @@ import subprocess
 
 from PIL import Image, ImageDraw
 
-from .base import (FPS, LARGURA, ZONA_X, ZONA_Y, cor, ease_out, fonte, quadros,
+from .base import (FPS, LARGURA, ZONA_X, ZONA_Y, cor, cor_painel, ease_out, fonte, quadros,
                    texto_escuro_sobre)
 from .estilos import BRANCO, ESCURO, PRETO, _bloco_palavras, _medir, _recortar, sombra
 
@@ -31,9 +31,9 @@ def _alfa_saida(t, dur):
     return 1.0 - min(1.0, max(0.0, (t - dur) / SAIDA))
 
 
-def _cartao(W, H, tema="escuro", raio=28):
+def _cartao(W, H, tema="escuro", raio=28, cor_fundo=None):
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    fundo = (18, 18, 22, 235) if tema == "escuro" else (255, 255, 255, 245)
+    fundo = cor_painel(cor_fundo, (18, 18, 22), 235) if tema == "escuro" else (255, 255, 255, 245)
     ImageDraw.Draw(img).rounded_rectangle([0, 0, W - 1, H - 1], raio, fill=fundo)
     return img
 
@@ -84,7 +84,7 @@ def r_lista(a, c, dur):
     topo = 44 + (titulo.height + 26 if titulo else 0)
     alturas = [max(70, l.height) for l in linhas]
     H = topo + sum(alturas) + 30 * (len(linhas) - 1) + 44
-    base = _cartao(W, H, tema)
+    base = _cartao(W, H, tema, cor_fundo=a.get("fundo"))
     if titulo:
         base.alpha_composite(titulo, (48, 40))
     tempos = [i["t"] - a["inicio"] for i in itens]
@@ -358,8 +358,10 @@ def posicionar(tipo, W, H, a, zona_rosto):
     return x, int(pref)
 
 
-def renderizar(a, destaque, saida, zona_rosto=None):
-    """Desenha a animação a 30 qps e grava um .mov com alfa. Devolve (x, y, sons, duração)."""
+def renderizar(a, destaque, saida, zona_rosto=None, fundo=None):
+    """Desenha a animação a 30 qps e grava um .mov com alfa. Devolve (x, y, sons, duração).
+    fundo = cor dos cartões escuros (a animação pode trazer a sua em a["fundo"])."""
+    a = dict(a, fundo=a.get("fundo") or fundo)
     tipo = a["tipo"]
     c = cor(a.get("cor") or destaque)
     parada = a["fim"] - a["inicio"]

@@ -22,10 +22,11 @@ Adaptado do roteiro EDIT IA PRO (modo celular) pra rodar aqui com o editor do re
 
 ## Passo 2 · Ouvir e cortar
 
-1. `transcrever` e `planejar`. O plano já segue as regras: silêncio maior que 0,25 s sai; tomada repetida fica a ÚLTIMA que foi até o fim; frase abandonada sai; "hum", "ahn", "tipo assim" soltos saem; cada trecho ganha 0,06 s de folga antes e 0,10 s depois, sem entrar na palavra vizinha.
-2. Leia as linhas de "Conferir" e "Atenção". Repetição pode ser de propósito no jeito dela de falar (anáfora: "Eu posso... Eu posso..."). Na dúvida, mantenha e conte pra ela.
-3. Conte o plano em 3 linhas ("tirei 14 pausas e 2 frases repetidas; o vídeo foi de 1:12 pra 0:41; fiquei com a segunda tomada do começo") e pergunte se pode cortar.
-4. `montar` e mande o `corte.mp4`: "Assiste. Tá bom? Se quiser mudar algo, me diz o tempo do trecho, tipo 'entre 3 e 5 segundos tira essa parte'". Use `tirar` + `montar` até ela aprovar. **Aprovação 1.**
+1. `transcrever`. Leia a fala com `texto <nome> --original`: se alguma palavra saiu errada (ex.: "IA" virou "aí a", nome de marca), corrija direto em `transcricao.json` antes de planejar (juntar duas palavras numa só é juntar as entradas, com o início da primeira e o fim da segunda). Depois de `planejar`, não mexa mais nesse arquivo.
+2. `planejar`. O plano já segue as regras: silêncio maior que 0,25 s sai; tomada repetida fica a ÚLTIMA que foi até o fim; frase abandonada sai; "hum", "ahn", "tipo assim" soltos saem; cada trecho ganha 0,06 s de folga antes e 0,10 s depois, sem entrar na palavra vizinha.
+3. Leia as linhas de "Conferir" e "Atenção". Repetição pode ser de propósito no jeito dela de falar (anáfora: "Eu posso... Eu posso..."). Na dúvida, mantenha e conte pra ela.
+4. Conte o plano em 3 linhas ("tirei 14 pausas e 2 frases repetidas; o vídeo foi de 1:12 pra 0:41; fiquei com a segunda tomada do começo") e pergunte se pode cortar.
+5. `montar` e mande o `corte.mp4`: "Assiste. Tá bom? Se quiser mudar algo, me diz o tempo do trecho, tipo 'entre 3 e 5 segundos tira essa parte'". Use `tirar` + `montar` até ela aprovar. **Aprovação 1.**
 
 ## Passo 3 · Estilo, pelos nomes
 

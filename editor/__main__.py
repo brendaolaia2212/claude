@@ -143,7 +143,7 @@ def c_texto(a):
 def c_mostruario(a):
     from .conferir import mostruario
     ops = [o.strip() for o in a.opcoes.split(",")] if a.opcoes else None
-    print(mostruario(a.nome, a.tipo, _tempo(a.t) if a.t else None, a.cor, ops, a.texto))
+    print(mostruario(a.nome, a.tipo, _tempo(a.t) if a.t else None, a.cor, ops, a.texto, a.fundo))
 
 
 def c_sugerir(a):
@@ -255,6 +255,7 @@ def main():
     s = sub.add_parser("mostruario"); s.add_argument("nome"); s.add_argument("--tipo", default="legenda",
                                                                                choices=["legenda", "gancho"])
     s.add_argument("--t"); s.add_argument("--cor"); s.add_argument("--opcoes"); s.add_argument("--texto")
+    s.add_argument("--fundo")
     s.set_defaults(f=c_mostruario)
     s = sub.add_parser("sugerir"); s.add_argument("nome"); s.add_argument("--ritmo"); s.set_defaults(f=c_sugerir)
     s = sub.add_parser("quadros"); s.add_argument("nome"); s.add_argument("tempos", nargs="+")
