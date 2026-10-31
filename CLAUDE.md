@@ -45,10 +45,22 @@ Tudo roda com `python -m editor <comando>` na raiz do repositório. Cada vídeo 
 | `estado <nome> "linha"` | Anota uma decisão na memória do vídeo |
 | `salvar-estilo <nome>` / `usar-estilo <nome>` | Guarda / aplica o estilo aprovado (`perfil/estilo.json`) |
 | `situacao <nome>` | O que já existe e o que foi decidido |
+| `aula <nome> [--trechos 0:00-0:30,5:10-5:40]` | Aula 16:9 pro YouTube: prende o roteiro (`aula.roteiro`) nas palavras e desenha legenda, capítulos, slides, termos e efeitos de câmera. Com `--trechos` faz a amostra; sem, o vídeo inteiro + capítulos pro YouTube |
 
 Na primeira vez da conversa, se `python -c "import faster_whisper, cv2, PIL"` falhar, rode `bash scripts/preparar.sh` (diga só "Estou preparando as ferramentas, leva uns minutos só na primeira vez"). Se faltar internet pra baixar, diga: "Preciso de acesso à internet pra baixar as ferramentas. Libera nas configurações do ambiente e me avisa."
 
 Anexos que ela manda ficam em `/root/.claude/uploads/`. Se o anexo de vídeo não chegar (arquivo grande demais), peça um link do Google Drive com "qualquer pessoa com o link pode ver".
+
+### Aula ou vídeo pro YouTube (16:9)
+
+Quando ela mandar uma aula ou pedir "versão YouTube": `"formato": "16:9"` no `edicao.json` antes de `montar` (o corte sai 1920x1080). Os PDFs de slides vão em `aula.decks` (`{"nome": "/caminho.pdf"}`). Leia a transcrição inteira e escreva `aula.roteiro`, cada item preso às palavras dela (índices da `transcricao.json`, `de`/`ate`):
+
+- `{"tipo": "capitulo", "de": 118, "numero": "01", "titulo": "...", "sub": "...", "curto": "..."}` (abertura animada + etiqueta no canto; vai até o próximo capítulo)
+- `{"tipo": "slide", "de": 282, "ate": 337, "deck": "ocultos", "pagina": 4}` (a página ao lado dela, quando ela explica o que está no slide)
+- `{"tipo": "termo", "de": 561, "ate": 590, "termo": "/orbit", "texto": "o que significa"}`
+- `{"tipo": "camera", "de": 581, "ate": 590, "efeito": "orbit"}`: o efeito no próprio vídeo dela, com desenho do movimento. Efeitos: `dollyin dollyout orbit tracking pan tilt craneup handheld static pov macro closeup mediumshot wideshot shallowdepth deepfocus rackfocus slowmotion speedramp hyperlapse softlight goldenhour cinematic naturaldaylight motionblur glitch vhs particulas glow reveal 9:16 16:9`.
+
+Palavra ouvida errado: corrija em `transcricao.json` antes de `planejar` sem apagar entradas (junte trocando o texto da primeira e deixando as outras com `""`), pra os índices não mudarem. Cortes decididos lendo a fala: `"tirar_palavras": [[i, j], ...]`. Amostra com `aula --trechos`, vídeo inteiro com `aula`. Entregue também a lista de capítulos pro texto do YouTube. Vídeo de 30 min ou mais é grande pra mandar pelo celular: mande a amostra e, no fim, pergunte como ela prefere receber o arquivo inteiro.
 
 ### O arquivo `edicao.json`
 

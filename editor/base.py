@@ -75,11 +75,15 @@ def sondar(arquivo):
 def fonte(nome, tamanho, peso=800):
     from PIL import ImageFont
     arq = {"anton": "Anton-Regular.ttf", "montserrat": "Montserrat-Variable.ttf",
-           "caveat": "Caveat-Variable.ttf"}[nome]
+           "caveat": "Caveat-Variable.ttf",
+           # letras da marca (Cria Aí!): títulos em Archivo, texto em Manrope
+           "archivo": "Archivo-Variable.ttf", "manrope": "Manrope-Variable.ttf"}[nome]
     f = ImageFont.truetype(str(FONTES / arq), int(round(tamanho)))
     if nome != "anton":
         try:
-            f.set_variation_by_axes([peso])
+            eixos = f.get_variation_axes()
+            valores = [peso if e["name"] in (b"Weight", "Weight") else e["default"] for e in eixos]
+            f.set_variation_by_axes(valores)
         except Exception:
             pass
     return f

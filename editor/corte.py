@@ -1,6 +1,7 @@
 """Plano de corte (pausas, tomadas repetidas, muletas) e montagem do corte.mp4."""
 import difflib
 import json
+import math
 import re
 from concurrent.futures import ThreadPoolExecutor
 
@@ -110,13 +111,20 @@ def _juntar_trechos(manter, palavras, silencios, duracao):
     return _quantizar(unidos)
 
 
-def _quantizar(trechos):
-    """Cada trecho com duração em quadros inteiros: voz e imagem nunca escorregam."""
+def _quantizar(trechos, perto=False):
+    """Cada trecho com duração em quadros inteiros: voz e imagem nunca escorregam.
+
+    perto=False: o começo arredonda pra trás e o fim pra frente (sem bordas pelo som,
+    nunca come o começo nem o fim da palavra). perto=True: quadro mais perto (as bordas
+    pelo som já têm folga; arredondar pra fora poderia entrar no respiro seguinte)."""
     out = []
     for s, e in trechos:
-        n = int(round((e - s) * FPS))
-        if n >= 3:
-            out.append([round(s, 3), round(s + n / FPS, 4)])
+        a = round(s * FPS) if perto else math.floor(s * FPS + 1e-6)
+        b = round(e * FPS) if perto else math.ceil(e * FPS - 1e-6)
+        if out and a <= round(out[-1][1] * FPS):
+            a = round(out[-1][1] * FPS)
+        if b - a >= 3:
+            out.append([round(a / FPS, 4), round(b / FPS, 4)])
     return out
 
 
@@ -135,13 +143,30 @@ def planejar(nome):
     fora = set(mul)
     for k in frases_fora:
         fora |= {w["i"] for w in frases[k]}
+    # decisões feitas lendo a fala (índices de palavra, intervalos fechados)
+    for a, b in ed.get("tirar_palavras", []):
+        fora |= set(range(a, b + 1))
+    for a, b in ed.get("manter_palavras", []):
+        fora -= set(range(a, b + 1))
     manter = [i for i in range(len(palavras)) if i not in fora]
-    trechos = _juntar_trechos(manter, palavras, sil, dur)
+    en = _energia(nome)
+    if en:
+        from .bordas import conferir, trechos_por_energia
+        trechos = _quantizar(trechos_por_energia(manter, palavras, en, dur, PAUSA_MAX), perto=True)
+        arriscados = conferir(trechos, en)
+        # borda que cai com som (fala emendada): emenda mais macia, sem estalo
+        fades = [[0.04 if en.tem_som(s + 0.012) else 0.01, 0.04 if en.tem_som(e - 0.012) else 0.01]
+                 for s, e in trechos]
+    else:
+        trechos = _juntar_trechos(manter, palavras, sil, dur)
+        arriscados, fades = [], None
 
     pausas = sum(1 for a, b in zip(trechos, trechos[1:]) if b[0] - a[1] > PAUSA_MAX)
     final = sum(e - s for s, e in trechos)
     longas = [w for w in palavras if w["e"] - w["s"] > 1.2]
     ed["corte"] = {"segmentos": trechos, "palavras": manter}
+    if fades:
+        ed["corte"]["fades"] = fades
     salvar_edicao(nome, ed)
 
     linhas = [f"Tirei {pausas} pausa(s), {len(frases_fora)} frase(s) repetida(s) ou abandonada(s)"
@@ -156,7 +181,25 @@ def planejar(nome):
     for w in longas:
         linhas.append(f"Atenção: \"{w['w']}\" em {mmss(w['s'])} dura {w['e'] - w['s']:.1f}s, "
                       "pode ter frase repetida escondida. Vale ouvir.")
+    if en:
+        linhas.append(f"Bordas pelo som: {2 * len(trechos)} pontas de corte, "
+                      f"{len(arriscados)} caem com som (fala emendada).")
+        for t, lado in arriscados[:15]:
+            linhas.append(f"  Conferir borda ({lado}) em {mmss(t)} do original")
     return "\n".join(linhas)
+
+
+def _energia(nome):
+    """Energia do áudio (voz16k.wav que o transcrever deixa) pras bordas dos cortes."""
+    from .bordas import Energia
+    p = pasta(nome)
+    wav = p / "voz16k.wav"
+    if not wav.exists():
+        ed = ler_edicao(nome)
+        if not sondar(ed["original"])["tem_som"]:
+            return None
+        ffmpeg("-i", ed["original"], "-vn", "-ac", 1, "-ar", 16000, "-c:a", "pcm_s16le", wav)
+    return Energia(wav)
 
 
 def corte_para_original(segmentos):
@@ -183,18 +226,25 @@ def tirar(nome, ini, fim):
         if of < e:
             novos.append([of, e])
     ed["corte"]["segmentos"] = _quantizar(novos)
+    ed["corte"].pop("fades", None)
     salvar_edicao(nome, ed)
     return sum(e - s for s, e in ed["corte"]["segmentos"])
 
 
-def _filtro_video(info):
-    return (f"scale={LARGURA}:{ALTURA}:force_original_aspect_ratio=increase,"
-            f"crop={LARGURA}:{ALTURA},fps={FPS},setsar=1,format=yuv420p")
+def tamanho(ed):
+    """(largura, altura) do vídeo editado: em pé (padrão) ou 16:9 pro YouTube."""
+    return (1920, 1080) if ed.get("formato") == "16:9" else (LARGURA, ALTURA)
+
+
+def _filtro_video(info, ed=None):
+    L, A = tamanho(ed or {})
+    return (f"scale={L}:{A}:force_original_aspect_ratio=increase,"
+            f"crop={L}:{A},fps={FPS},setsar=1,format=yuv420p")
 
 
 def _extrair(args):
     """Um trecho: vídeo .mp4 (sem som) e som .wav separados, os dois com a mesma duração exata."""
-    i, (s, e), original, saida, vf, tem_som = args
+    i, (s, e), original, saida, vf, tem_som, (fi, fo) = args
     n = int(round((e - s) * FPS))
     d = n / FPS
     entrada = ["-ss", f"{s:.4f}", "-t", f"{d + 0.2:.4f}", "-i", original]
@@ -202,8 +252,8 @@ def _extrair(args):
            "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-g", "30",
            "-video_track_timescale", "15360", f"{saida}.mp4")
     if tem_som:
-        af = (f"aresample=48000,aformat=channel_layouts=stereo,afade=t=in:d=0.01,"
-              f"apad,atrim=end_sample={int(round(d * 48000))},afade=t=out:st={d - 0.01:.5f}:d=0.01")
+        af = (f"aresample=48000,aformat=channel_layouts=stereo,afade=t=in:d={fi},"
+              f"apad,atrim=end_sample={int(round(d * 48000))},afade=t=out:st={d - fo:.5f}:d={fo}")
         ffmpeg(*entrada, "-map", "0:a:0", "-af", af, "-c:a", "pcm_s16le", "-ar", 48000, f"{saida}.wav")
     else:
         ffmpeg("-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo", "-t", f"{d:.5f}",
@@ -212,6 +262,13 @@ def _extrair(args):
 
 
 def montar(nome):
+    """Monta o corte.mp4 numa passada só: lê o original uma vez e fica com os quadros
+    dos trechos (rápido mesmo com centenas de cortes); o som é cortado à parte, com
+    emenda macia em cada corte."""
+    import wave
+
+    import numpy as np
+
     p = pasta(nome)
     ed = ler_edicao(nome)
     info = sondar(ed["original"])
@@ -220,8 +277,67 @@ def montar(nome):
     tmp.mkdir(exist_ok=True)
     for f in tmp.glob("*"):
         f.unlink()
-    vf = _filtro_video(info)
-    tarefas = [(i, sg, ed["original"], str(tmp / f"t{i:04d}"), vf, info["tem_som"])
+    L, A = tamanho(ed)
+    quadros = [(int(round(s * FPS)), int(round(e * FPS))) for s, e in segs]
+    expr = "+".join(f"between(n\\,{a}\\,{b - 1})" for a, b in quadros)
+    (tmp / "filtro.txt").write_text(
+        f"fps={FPS},select={expr},setpts=N/{FPS}/TB,"
+        f"scale={L}:{A}:force_original_aspect_ratio=increase,crop={L}:{A},setsar=1,format=yuv420p")
+    ffmpeg("-i", ed["original"], "-map", "0:v:0", "-filter_script:v", tmp / "filtro.txt", "-an",
+           "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-g", "30", "-fps_mode", "passthrough",
+           "-video_track_timescale", "15360", tmp / "video.mp4")
+    total = sum(b - a for a, b in quadros)
+    sr = 48000
+    fades = ed["corte"].get("fades") or []
+    if len(fades) != len(segs):
+        fades = [[0.01, 0.01]] * len(segs)
+    if info["tem_som"]:
+        bruto = tmp / "som_original.wav"
+        ffmpeg("-i", ed["original"], "-map", "0:a:0", "-vn", "-ac", 2, "-ar", sr, "-c:a", "pcm_s16le", bruto)
+        with wave.open(str(bruto), "rb") as f:
+            som = np.frombuffer(f.readframes(f.getnframes()), np.int16).reshape(-1, 2)
+        partes = []
+        for (a, b), (fi, fo) in zip(quadros, fades):
+            i0, n = a * sr // FPS, (b - a) * sr // FPS
+            x = som[i0:i0 + n].astype(np.float32)
+            if len(x) < n:
+                x = np.concatenate([x, np.zeros((n - len(x), 2), np.float32)])
+            ni, no = max(1, int(fi * sr)), max(1, int(fo * sr))
+            x[:ni] *= np.linspace(0, 1, ni)[:, None]
+            x[-no:] *= np.linspace(1, 0, no)[:, None]
+            partes.append(x)
+        mix = np.concatenate(partes).clip(-32768, 32767).astype(np.int16)
+        bruto.unlink()
+    else:
+        mix = np.zeros((total * sr // FPS, 2), np.int16)
+    with wave.open(str(tmp / "audio.wav"), "wb") as f:
+        f.setnchannels(2)
+        f.setsampwidth(2)
+        f.setframerate(sr)
+        f.writeframes(mix.tobytes())
+    ffmpeg("-i", tmp / "video.mp4", "-i", tmp / "audio.wav", "-map", "0:v", "-map", "1:a",
+           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", p / "corte.mp4")
+    _transcricao_do_corte(nome, segs)
+    for f in tmp.glob("*"):
+        f.unlink()
+    return sondar(p / "corte.mp4")["duracao"]
+
+
+def montar_por_trechos(nome):
+    """Jeito antigo (um ffmpeg por trecho). Fica pra comparar, se precisar."""
+    p = pasta(nome)
+    ed = ler_edicao(nome)
+    info = sondar(ed["original"])
+    segs = ed["corte"]["segmentos"]
+    tmp = p / "trechos"
+    tmp.mkdir(exist_ok=True)
+    for f in tmp.glob("*"):
+        f.unlink()
+    vf = _filtro_video(info, ed)
+    fades = ed["corte"].get("fades") or [[0.01, 0.01]] * len(segs)
+    if len(fades) != len(segs):
+        fades = [[0.01, 0.01]] * len(segs)
+    tarefas = [(i, sg, ed["original"], str(tmp / f"t{i:04d}"), vf, info["tem_som"], tuple(fades[i]))
                for i, sg in enumerate(segs)]
     with ThreadPoolExecutor(2) as ex:
         bases = list(ex.map(_extrair, tarefas))

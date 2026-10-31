@@ -14,9 +14,12 @@ def detectar(nome):
     cap = cv2.VideoCapture(str(p / "corte.mp4"))
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # tamanho real do corte (em pé ou 16:9)
+    L = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or LARGURA
+    A = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or ALTURA
     det = None
     try:
-        det = cv2.FaceDetectorYN.create(str(MODELO_ROSTO), "", (LARGURA // 2, ALTURA // 2), 0.6)
+        det = cv2.FaceDetectorYN.create(str(MODELO_ROSTO), "", (L // 2, A // 2), 0.6)
     except Exception:
         haar = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
     out = []
@@ -26,7 +29,7 @@ def detectar(nome):
         ok, img = cap.read()
         if not ok:
             break
-        peq = cv2.resize(img, (LARGURA // 2, ALTURA // 2))
+        peq = cv2.resize(img, (L // 2, A // 2))
         caixa = None
         if det is not None:
             _, faces = det.detect(peq)
@@ -36,7 +39,9 @@ def detectar(nome):
                 olhos_y = min(f[5], f[7])
                 boca_y = max(f[11], f[13])
                 caixa = {"x": float(x), "y": float(y), "w": float(w), "h": float(h),
-                         "olhos": float(olhos_y), "boca": float(boca_y)}
+                         "olhos": float(olhos_y), "boca": float(boca_y),
+                         "olho_d": [float(f[4]), float(f[5])], "olho_e": [float(f[6]), float(f[7])],
+                         "boca_c": [float((f[10] + f[12]) / 2), float((f[11] + f[13]) / 2)]}
         else:
             cinza = cv2.cvtColor(peq, cv2.COLOR_BGR2GRAY)
             faces = haar.detectMultiScale(cinza, 1.1, 5, minSize=(60, 60))

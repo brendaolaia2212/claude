@@ -39,7 +39,10 @@ def _baixar(link):
     entrada.mkdir(parents=True, exist_ok=True)
     if "drive.google" in link:
         import gdown
-        saida = gdown.download(link, str(entrada) + "/", quiet=True, fuzzy=True)
+        # gdown 6 tirou o fuzzy=True; com o id funciona em qualquer versão
+        m = re.search(r"/d/([\w-]+)|[?&]id=([\w-]+)", link)
+        saida = gdown.download(id=m.group(1) or m.group(2), output=str(entrada) + "/", quiet=True) \
+            if m else gdown.download(link, str(entrada) + "/", quiet=True)
         if not saida:
             raise SystemExit("Não consegui baixar do Drive. O link precisa estar como "
                              "'Qualquer pessoa com o link pode ver'.")
@@ -128,6 +131,8 @@ def c_texto(a):
     ps = ler_json(pasta(a.nome) / ("transcricao.json" if a.original else "transcricao_corte.json"), [])
     linha, ini = [], None
     for w in ps:
+        if not w["w"]:
+            continue
         if ini is None:
             ini = w["s"]
         linha.append(w["w"])
@@ -240,6 +245,26 @@ def c_situacao(a):
         print((p / "estado.md").read_text())
 
 
+def c_aula(a):
+    """Aula 16:9 (YouTube): ancora o roteiro nas palavras e desenha (tudo ou só trechos)."""
+    from . import aula
+    n, avisos = aula.ancorar(a.nome)
+    for x in avisos:
+        print("Aviso:", x)
+    trechos = None
+    if a.trechos:
+        trechos = []
+        for par in a.trechos.split(","):
+            x, y = par.split("-")
+            trechos.append((_tempo(x), _tempo(y)))
+    saida = a.saida or ("amostra.mp4" if trechos else "final.mp4")
+    arq, dur, seg = aula.render(a.nome, trechos, saida=saida, trabalhadores=a.processos,
+                                preset="veryfast" if trechos else "fast")
+    print(f"{arq}  ({mmss(dur)}, em {seg:.0f}s, {n} eventos)")
+    if not trechos:
+        print("Capítulos pro YouTube:\n" + aula.capitulos_youtube(a.nome))
+
+
 def main():
     ap = argparse.ArgumentParser(prog="python -m editor")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -267,6 +292,8 @@ def main():
     s = sub.add_parser("salvar-estilo"); s.add_argument("nome"); s.set_defaults(f=c_salvar_estilo)
     s = sub.add_parser("usar-estilo"); s.add_argument("nome"); s.set_defaults(f=c_usar_estilo)
     s = sub.add_parser("situacao"); s.add_argument("nome"); s.set_defaults(f=c_situacao)
+    s = sub.add_parser("aula"); s.add_argument("nome"); s.add_argument("--trechos")
+    s.add_argument("--saida"); s.add_argument("--processos", type=int, default=3); s.set_defaults(f=c_aula)
     a = ap.parse_args()
     a.f(a)
 

@@ -10,6 +10,8 @@ Adaptado do roteiro EDIT IA PRO (modo celular) pra rodar aqui com o editor do re
 
 **Tamanho:** até uns 90 segundos é rápido. Os vídeos longos dela (5 a 8 minutos de reflexão) funcionam, mas cada etapa demora mais: avise antes (transcrever ~1 min por minuto de vídeo; vídeo final ~2 min por minuto). Ofereça também tirar cortes curtos (30 a 60 s) do vídeo longo pra Reels.
 
+**Aulas longas (30 a 40 min, 16:9):** transcrever ~40 s por minuto de vídeo; o corte sai numa passada só (~15 a 25 min); o vídeo final ~1 min por minuto. Siga a seção "Aula ou vídeo pro YouTube" do `CLAUDE.md`.
+
 ## Passo 1 · Receber
 
 1. `novo ultimo` (ou com o link). Leia os avisos: horizontal, sem som, qualidade baixa de WhatsApp (sugira o arquivo original salvo em Arquivos).
