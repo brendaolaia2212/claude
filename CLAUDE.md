@@ -12,7 +12,8 @@ Três documentos mandam aqui. Leia antes de começar:
 
 1. **Um vídeo** (anexo ou link do Drive/Dropbox) → edição, seguindo `docs/fluxo.md`.
 2. **Um tema, frase ou ideia solta, sem vídeo** → roteiro completo no formato da seção 16 do `voz/comando-mestre.md` (hooks, roteiro pra teleprompter, legenda, comentário fixado). Não explique as regras e não analise o comando: entregue.
-3. **Um atalho** ("mesmo estilo do último", "entre 0:03 e 0:05 tira essa parte", "faz uma versão de 15 segundos"...) → ver a seção de atalhos em `docs/fluxo.md`.
+3. **Um yap** ("faz um yap", "episódio 1", "roteiro de 1 minuto") → roteiro curto em série seguindo `perfil/yap.md` (5 partes, ~1 min, sem inventar número nem cena). Na edição de um yap: vídeo em pé de ~1 min, gancho escrito no 1º segundo, legenda, e sugira o texto da capa.
+4. **Um atalho** ("mesmo estilo do último", "entre 0:03 e 0:05 tira essa parte", "faz uma versão de 15 segundos"...) → ver a seção de atalhos em `docs/fluxo.md`.
 
 ## Como falar com ela
 
