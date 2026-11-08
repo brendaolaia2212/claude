@@ -175,11 +175,19 @@ class Energia:
         return bool(self.som[self.k(t)])
 
 
-def trechos_por_energia(manter, palavras, en, duracao, pausa_max):
+def trechos_por_energia(manter, palavras, en, duracao, pausa_max, acoes=()):
     """Palavras mantidas -> trechos [ini, fim] cortando só fora do som das palavras.
 
     pausa_max: silêncio maior que isso entre duas palavras mantidas sai (fica só a folga).
+    acoes: [(i0, i1, manter_ate, ponta)] trechos de ação sem fala (abrir pacote, provar
+    roupa): ali a pausa até manter_ate fica inteira; a maior vira corte seco que guarda
+    `ponta` segundos do começo e do fim da ação.
     """
+    def regiao(i):
+        for i0, i1, ate, ponta in acoes:
+            if i0 <= i <= i1:
+                return ate, ponta
+        return None
     if not manter:
         return []
     n = len(palavras)
@@ -195,7 +203,8 @@ def trechos_por_energia(manter, palavras, en, duracao, pausa_max):
     # agrupa palavras mantidas em blocos contínuos
     blocos = []
     for i in manter:
-        if blocos and blocos[-1][-1] == i - 1 and ini_r[i] - fim_r[i - 1] <= pausa_max:
+        lim = (regiao(i) or (pausa_max,))[0]
+        if blocos and blocos[-1][-1] == i - 1 and ini_r[i] - fim_r[i - 1] <= lim:
             blocos[-1].append(i)
         else:
             blocos.append([i])
@@ -219,9 +228,16 @@ def trechos_por_energia(manter, palavras, en, duracao, pausa_max):
             a = max(a, min(antes, ini))
         if ult + 1 < n:
             z = min(z, max(depois, fim))
+        # numa ação, a ponta da ação fica (o gesto de abrir, o tecido aparecendo)
+        ra, rz = regiao(pri), regiao(ult)
+        if ra and pri > 0 and (pri - 1) in fim_r:
+            a = max(fim_r[pri - 1] + 0.05, ini - ra[1])
+        if rz and ult + 1 < n and (ult + 1) in ini_r:
+            z = min(ini_r[ult + 1] - 0.05, fim + rz[1])
         # silêncio longo dentro do bloco (o whisper às vezes estica uma palavra): divide
         partes, cur = [], a
-        for sa, sb in en.silencios_dentro(ini, fim, pausa_max + 0.15):
+        lim = (ra or (pausa_max,))[0]
+        for sa, sb in en.silencios_dentro(ini, fim, lim + 0.15):
             partes.append([cur, sa + FOLGA_FIM])
             cur = sb - FOLGA_INICIO
         partes.append([cur, z])

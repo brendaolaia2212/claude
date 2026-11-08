@@ -308,6 +308,41 @@ def r_barra(a, c, dur):
     return W, H, desenhar, [("whoosh_sobe", 0.05, -17)]
 
 
+def r_texto(a, c, dur):
+    """Texto no estilo yap: serifa elegante (ou manuscrita), branco, sombra suave.
+    a: texto (\\n quebra), fonte ("instrument", "instrument-italico", "kalam"), tam,
+    sobre (linha manuscrita acima), sub (linha manuscrita abaixo), som."""
+    from .estilos import _empilhar, _quebrar_simples
+    larg = ZONA_X[1] - ZONA_X[0]
+    nome_f = a.get("fonte", "instrument")
+    tam = a.get("tam", 104)
+    linhas = [l.strip() for l in a["texto"].split("\n") if l.strip()]
+    f = fonte(nome_f, tam)
+    while tam > 56 and any(_medir(f, l)[0] > larg for l in linhas) and len(linhas) > 1:
+        tam -= 6
+        f = fonte(nome_f, tam)
+    partes = []
+    if a.get("sobre"):
+        partes.append(_texto(a["sobre"], fonte("kalam", 56), BRANCO))
+    for l in linhas:
+        for q in _quebrar_simples(l, f, larg):
+            partes.append(_texto(q, f, BRANCO))
+    if a.get("sub"):
+        fk = fonte("kalam", 50)
+        for q in _quebrar_simples(a["sub"], fk, larg - 40):
+            partes.append(_texto(q, fk, BRANCO))
+    img = sombra(_empilhar(partes, 6), 14, (0, 4), 175)
+    W, H = img.width, img.height + 40
+
+    def desenhar(t):
+        tela = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        p = ease_out(t / 0.45)
+        _colar(tela, img, W / 2, H / 2 + 30 * (1 - p), 1.0, p * _alfa_saida(t, dur))
+        return tela
+    som = a.get("som", "pop")
+    return W, H, desenhar, ([(som, 0.0, a.get("db", -20))] if som else [])
+
+
 def r_chamada(a, c, dur):
     W = ZONA_X[1] - ZONA_X[0]
     t = _texto_quebrado(a["texto"], fonte("montserrat", 58, 800), texto_escuro_sobre(c), W - 120)
@@ -331,10 +366,10 @@ def r_chamada(a, c, dur):
 
 RECEITAS = {"impacto": r_impacto, "lista": r_lista, "passo": r_passo, "numero": r_numero,
             "notificacao": r_notificacao, "carimbo": r_carimbo, "destaque": r_destaque,
-            "comentario": r_comentario, "barra": r_barra, "chamada": r_chamada}
+            "comentario": r_comentario, "barra": r_barra, "chamada": r_chamada, "texto": r_texto}
 POSICAO = {"impacto": "alto", "lista": "meio", "passo": "alto", "numero": "alto",
            "notificacao": "topo", "carimbo": "meio", "destaque": "ponto", "comentario": "baixo",
-           "barra": "alto", "chamada": "meio"}
+           "barra": "alto", "chamada": "meio", "texto": "meio"}
 
 
 def posicionar(tipo, W, H, a, zona_rosto):

@@ -3,6 +3,7 @@ import difflib
 import json
 import math
 import re
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from .base import (FPS, ALTURA, LARGURA, ffmpeg, ler_edicao, ler_json, mmss, pasta,
@@ -152,7 +153,8 @@ def planejar(nome):
     en = _energia(nome)
     if en:
         from .bordas import conferir, trechos_por_energia
-        trechos = _quantizar(trechos_por_energia(manter, palavras, en, dur, PAUSA_MAX), perto=True)
+        acoes = [tuple(x) for x in ed.get("acoes", [])]
+        trechos = _quantizar(trechos_por_energia(manter, palavras, en, dur, PAUSA_MAX, acoes), perto=True)
         arriscados = conferir(trechos, en)
         # borda que cai com som (fala emendada): emenda mais macia, sem estalo
         fades = [[0.04 if en.tem_som(s + 0.012) else 0.01, 0.04 if en.tem_som(e - 0.012) else 0.01]
@@ -261,6 +263,26 @@ def _extrair(args):
     return saida
 
 
+MODELO_RUIDO = Path(__file__).resolve().parent.parent / "recursos" / "modelos" / "rnnoise-sh.rnnn"
+URL_MODELO_RUIDO = ("https://raw.githubusercontent.com/GregorR/rnnoise-models/master/"
+                    "somnolent-hogwash-2018-09-01/sh.rnnn")
+
+
+def _filtro_limpar_som():
+    """Tira ruído de fundo (ventilador, rua, chiado) sem mexer no volume da voz.
+    RNNoise (rede treinada em fala) quando o modelo baixa; senão, o filtro de ruído do ffmpeg."""
+    if not MODELO_RUIDO.exists():
+        try:
+            MODELO_RUIDO.parent.mkdir(parents=True, exist_ok=True)
+            from .base import rodar
+            rodar(["curl", "-sSLf", "-o", str(MODELO_RUIDO), URL_MODELO_RUIDO])
+        except Exception:
+            pass
+    if MODELO_RUIDO.exists():
+        return f"highpass=f=75,arnndn=m={MODELO_RUIDO}:mix=0.85"
+    return "highpass=f=75,afftdn=nr=14:nf=-42:tn=1"
+
+
 def montar(nome):
     """Monta o corte.mp4 numa passada só: lê o original uma vez e fica com os quadros
     dos trechos (rápido mesmo com centenas de cortes); o som é cortado à parte, com
@@ -280,9 +302,13 @@ def montar(nome):
     L, A = tamanho(ed)
     quadros = [(int(round(s * FPS)), int(round(e * FPS))) for s, e in segs]
     expr = "+".join(f"between(n\\,{a}\\,{b - 1})" for a, b in quadros)
+    # "melhorar_imagem": tira o granulado, clareia um pouco, dá vida à cor e nitidez leve
+    melhora = (",hqdn3d=1.5:1.5:4:4,eq=contrast=1.07:brightness=0.03:saturation=1.10:gamma=1.05,"
+               "colorbalance=rs=-0.02:bs=0.02:rm=-0.02:bm=0.01,unsharp=5:5:0.4:5:5:0"
+               if ed.get("melhorar_imagem") else "")
     (tmp / "filtro.txt").write_text(
         f"fps={FPS},select={expr},setpts=N/{FPS}/TB,"
-        f"scale={L}:{A}:force_original_aspect_ratio=increase,crop={L}:{A},setsar=1,format=yuv420p")
+        f"scale={L}:{A}:force_original_aspect_ratio=increase,crop={L}:{A}{melhora},setsar=1,format=yuv420p")
     ffmpeg("-i", ed["original"], "-map", "0:v:0", "-filter_script:v", tmp / "filtro.txt", "-an",
            "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-g", "30", "-fps_mode", "passthrough",
            "-video_track_timescale", "15360", tmp / "video.mp4")
@@ -293,7 +319,9 @@ def montar(nome):
         fades = [[0.01, 0.01]] * len(segs)
     if info["tem_som"]:
         bruto = tmp / "som_original.wav"
-        ffmpeg("-i", ed["original"], "-map", "0:a:0", "-vn", "-ac", 2, "-ar", sr, "-c:a", "pcm_s16le", bruto)
+        limpeza = ["-af", _filtro_limpar_som()] if ed.get("limpar_som") else []
+        ffmpeg("-i", ed["original"], "-map", "0:a:0", "-vn", *limpeza, "-ac", 2, "-ar", sr,
+               "-c:a", "pcm_s16le", bruto)
         with wave.open(str(bruto), "rb") as f:
             som = np.frombuffer(f.readframes(f.getnframes()), np.int16).reshape(-1, 2)
         partes = []
