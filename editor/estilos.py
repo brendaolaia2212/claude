@@ -1,4 +1,6 @@
 """Desenho das legendas e dos ganchos, pelos nomes da lista de estilos."""
+import re
+
 from PIL import Image, ImageDraw, ImageFilter
 
 from .base import ZONA_X, cor, cor_painel, fonte, texto_escuro_sobre
@@ -13,6 +15,7 @@ LEGENDAS = {
     "impacto": (3, "Anton, caixa alta, contorno preto, 1 a 3 palavras"),
     "caixa": (3, "Montserrat, caixa colorida atrás da palavra falada"),
     "gigante": (1, "Anton, uma palavra por vez, bem grande, sombra colorida"),
+    "yap": (1, "serifa branca elegante, uma palavra por vez, como no yap"),
     "pulso": (3, "Montserrat, a palavra falada cresce e ganha cor"),
     "fita": (4, "Montserrat branca numa faixa preta inclinada"),
     "papelaria": (6, "Montserrat, contorno grosso, a frase vai se escrevendo"),
@@ -24,6 +27,7 @@ GANCHOS = {
     "balao": "balão branco de conversa, como pergunta do público",
     "marcatexto": "texto escuro sobre faixas de marca-texto",
     "vidro": "painel escuro translúcido, texto branco, traço colorido",
+    "yap": "título em serifa branca + linha manuscrita (Episódio 1), como no yap",
 }
 NOMES_BONITOS = {"caixa": "Caixa na palavra", "gigante": "Palavra gigante", "balao": "Balão",
                  "marcatexto": "Marca-texto", "vidro": "Vidro escuro"}
@@ -137,6 +141,14 @@ def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False, fundo=None):
         return _bloco_palavras(palavras, [f] * n, cores, 4, PRETO, 26, caixas={ativa: c},
                                sem_contorno={ativa})
 
+    if estilo == "yap":
+        p = re.sub(r"[.,;:!?…]+$", "", palavras[ativa]).strip() or palavras[ativa]
+        tam = 92
+        while _medir(fonte("instrument", tam), p)[0] > LARG_MAX and tam > 50:
+            tam -= 6
+        return sombra(_bloco_palavras([p], [fonte("instrument", tam)], [BRANCO], 0, PRETO, 0),
+                      10, (0, 3), 150)
+
     if estilo == "gigante":
         p = palavras[ativa].upper()
         tam = 200
@@ -191,11 +203,29 @@ def _recortar(img):
     return img.crop(caixa) if caixa else img
 
 
-def bloco_gancho(estilo, texto, destaque, fundo=None):
-    """Gancho escrito do começo. texto com até 2 linhas (quebre com \\n)."""
+def bloco_gancho(estilo, texto, destaque, fundo=None, sobre=None, sub=None):
+    """Gancho escrito do começo. texto com até 2 linhas (quebre com \\n).
+    sobre/sub (só no yap): linha manuscrita acima (ex.: "Episódio 1") e abaixo do título."""
     estilo = nome_estilo(estilo)
     c = cor(destaque)
     linhas = [l.strip() for l in texto.split("\n") if l.strip()][:3]
+
+    if estilo == "yap":
+        tam = 124
+        while max(_medir(fonte("instrument", tam), l)[0] for l in linhas) > LARG_MAX and tam > 70:
+            tam -= 6
+        f = fonte("instrument", tam)
+        partes = []
+        if sobre:
+            partes.append(_recortar(_bloco_palavras([sobre], [fonte("kalam", 58)], [BRANCO], 0, PRETO, 0,
+                                                    larg_max=4000)))
+        for l in linhas:
+            partes.append(_recortar(_bloco_palavras([l], [f], [BRANCO], 0, PRETO, 0, larg_max=4000)))
+        if sub:
+            fk = fonte("kalam", 54)
+            for l in _quebrar_simples(sub, fk, LARG_MAX - 40):
+                partes.append(_recortar(_bloco_palavras([l], [fk], [BRANCO], 0, PRETO, 0, larg_max=4000)))
+        return sombra(_empilhar(partes, 2), 14, (0, 4), 170)
 
     if estilo == "manchete":
         tam = 110
@@ -273,6 +303,18 @@ def bloco_gancho(estilo, texto, destaque, fundo=None):
         return sombra(painel, 18, (0, 10), 90)
 
     raise SystemExit(f"Não conheço o gancho '{estilo}'. Opções: {', '.join(GANCHOS)}")
+
+
+def _quebrar_simples(texto, f, larg):
+    linhas, atual = [], ""
+    for p in texto.split():
+        t = (atual + " " + p).strip()
+        if _medir(f, t)[0] <= larg or not atual:
+            atual = t
+        else:
+            linhas.append(atual)
+            atual = p
+    return linhas + ([atual] if atual else [])
 
 
 def _empilhar(partes, espaco):

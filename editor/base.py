@@ -77,9 +77,12 @@ def fonte(nome, tamanho, peso=800):
     arq = {"anton": "Anton-Regular.ttf", "montserrat": "Montserrat-Variable.ttf",
            "caveat": "Caveat-Variable.ttf",
            # letras da marca (Cria Aí!): títulos em Archivo, texto em Manrope
-           "archivo": "Archivo-Variable.ttf", "manrope": "Manrope-Variable.ttf"}[nome]
+           "archivo": "Archivo-Variable.ttf", "manrope": "Manrope-Variable.ttf",
+           # estilo yap: título em serifa e linha manuscrita
+           "instrument": "InstrumentSerif-Regular.ttf", "instrument-italico": "InstrumentSerif-Italic.ttf",
+           "kalam": "Kalam-Bold.ttf"}[nome]
     f = ImageFont.truetype(str(FONTES / arq), int(round(tamanho)))
-    if nome != "anton":
+    if nome not in ("anton", "instrument", "instrument-italico", "kalam"):
         try:
             eixos = f.get_variation_axes()
             valores = [peso if e["name"] in (b"Weight", "Weight") else e["default"] for e in eixos]

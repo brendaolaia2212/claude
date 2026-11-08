@@ -27,10 +27,13 @@ def _gancho(camada, ed, rostos, ini, D):
         return []
     estilo = ed["estilo"].get("gancho", "manchete")
     bloco = bloco_gancho(estilo, g["texto"], ed["estilo"].get("cor", COR_PADRAO),
-                         ed["estilo"].get("fundo"))
+                         ed["estilo"].get("fundo"), sobre=g.get("sobre"), sub=g.get("sub"))
     topo = 260
     zona = rostos.zona(g0 + ini, g1 + ini) if rostos else None
-    if zona and topo + bloco.height > zona[1] - 20:
+    if estilo == "yap" and zona and topo + bloco.height > zona[1] - 20:
+        # rosto alto no quadro (ela perto da câmera): o título vai pra baixo da boca
+        topo = min(ZONA_Y[1] - bloco.height, zona[3] + 50)
+    elif zona and topo + bloco.height > zona[1] - 20:
         caber = max(0.7, (zona[1] - 20 - topo) / bloco.height)
         bloco = bloco.resize((int(bloco.width * caber), int(bloco.height * caber)), Image.LANCZOS)
     x = (LARGURA - bloco.width) / 2
