@@ -331,7 +331,8 @@ def r_texto(a, c, dur):
         fk = fonte("kalam", 50)
         for q in _quebrar_simples(a["sub"], fk, larg - 40):
             partes.append(_texto(q, fk, BRANCO))
-    img = sombra(_empilhar(partes, 6), 14, (0, 4), 175)
+    from .estilos import halo
+    img = halo(_empilhar(partes, 6))
     W, H = img.width, img.height + 40
 
     def desenhar(t):

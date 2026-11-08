@@ -146,8 +146,7 @@ def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False, fundo=None):
         tam = 92
         while _medir(fonte("instrument", tam), p)[0] > LARG_MAX and tam > 50:
             tam -= 6
-        return sombra(_bloco_palavras([p], [fonte("instrument", tam)], [BRANCO], 0, PRETO, 0),
-                      10, (0, 3), 150)
+        return halo(_bloco_palavras([p], [fonte("instrument", tam)], [BRANCO], 0, PRETO, 0))
 
     if estilo == "gigante":
         p = palavras[ativa].upper()
@@ -225,7 +224,7 @@ def bloco_gancho(estilo, texto, destaque, fundo=None, sobre=None, sub=None):
             fk = fonte("kalam", 54)
             for l in _quebrar_simples(sub, fk, LARG_MAX - 40):
                 partes.append(_recortar(_bloco_palavras([l], [fk], [BRANCO], 0, PRETO, 0, larg_max=4000)))
-        return sombra(_empilhar(partes, 2), 14, (0, 4), 170)
+        return halo(_empilhar(partes, 2))
 
     if estilo == "manchete":
         tam = 110
@@ -303,6 +302,11 @@ def bloco_gancho(estilo, texto, destaque, fundo=None, sobre=None, sub=None):
         return sombra(painel, 18, (0, 10), 90)
 
     raise SystemExit(f"Não conheço o gancho '{estilo}'. Opções: {', '.join(GANCHOS)}")
+
+
+def halo(img):
+    """Contorno escuro bem justo + sombra larga: texto branco fino legível até em fundo claro."""
+    return sombra(sombra(img, 3, (0, 1), 235), 18, (0, 4), 150)
 
 
 def _quebrar_simples(texto, f, larg):
