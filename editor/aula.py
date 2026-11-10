@@ -1129,16 +1129,18 @@ def capitulos_youtube(nome):
     return "\n".join(linhas)
 
 
-def para_envio(nome, arquivo="final.mp4", alvo_mb=360, saida=None):
+def para_envio(nome, arquivo="final.mp4", alvo_mb=360, saida=None, preset="medium"):
     """Cópia em Full HD que cabe no envio pelo chat (limite de 400 MB): duas passadas
-    com a taxa calculada pelo tamanho alvo. Daqui não dá pra subir no Drive dela."""
+    com a taxa calculada pelo tamanho alvo. Daqui não dá pra subir no Drive dela.
+    Pra baixar no celular, mire uns 100 a 120 MB (arquivo grande trava no app do celular)."""
     p = pasta(nome)
     D = sondar(p / arquivo)["duracao"]
     som_k = 96
     video_k = int(alvo_mb * 1048576 * 8 / D / 1000) - som_k - 20
     saida = p / (saida or f"{Path(arquivo).stem}-envio.mp4")
     log = p / "_passe"
-    comum = ["-c:v", "libx264", "-preset", "medium", "-b:v", f"{video_k}k", "-passlogfile", log]
+    comum = ["-c:v", "libx264", "-preset", preset, "-profile:v", "high", "-level", "4.1",
+             "-b:v", f"{video_k}k", "-passlogfile", log]
     ffmpeg("-i", p / arquivo, "-an", *comum, "-pass", 1, "-f", "null", "/dev/null")
     ffmpeg("-i", p / arquivo, *comum, "-maxrate", f"{2 * video_k}k", "-bufsize", f"{4 * video_k}k",
            "-pass", 2, "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", f"{som_k}k",

@@ -200,14 +200,45 @@ def r_notificacao(a, c, dur):
     return card.width, H2, desenhar, [("ding", 0.25, -14)]
 
 
+EMOJI_FONTE = "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf"
+
+
+def _emoji(e, tam):
+    """Emoji colorido (Noto Color Emoji) no tamanho pedido."""
+    from PIL import ImageFont
+    f = ImageFont.truetype(EMOJI_FONTE, 109)
+    img = Image.new("RGBA", (150, 150), (0, 0, 0, 0))
+    ImageDraw.Draw(img).text((8, 8), e, font=f, embedded_color=True)
+    img = img.crop(img.getchannel("A").getbbox() or (0, 0, 150, 150))
+    k = tam / max(img.size)
+    return img.resize((max(1, int(img.width * k)), max(1, int(img.height * k))), Image.LANCZOS)
+
+
 def r_carimbo(a, c, dur):
+    """Carimbo. cheio=True: selo preenchido na cor (texto branco), com emoji opcional
+    ao lado e um som próprio por cima da batida (ex.: APROVADO verde + "aprovado")."""
     tinta = (220, 38, 38, 255) if a.get("vermelho") else c
-    t = _texto(a["texto"].upper(), fonte("anton", 120), tinta)
-    W, H = t.width + 90, t.height + 70
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    ImageDraw.Draw(img).rounded_rectangle([6, 6, W - 7, H - 7], 18, outline=tinta, width=12)
-    img.alpha_composite(t, (45, 35))
-    img = img.rotate(8, expand=True, resample=Image.BICUBIC)
+    if a.get("cheio"):
+        t = _texto(a["texto"].upper(), fonte("anton", 118), texto_escuro_sobre(tinta))
+        emo = _emoji(a["emoji"], 120) if a.get("emoji") else None
+        W = t.width + 100 + (emo.width + 26 if emo else 0)
+        H = max(t.height, emo.height if emo else 0) + 64
+        img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ImageDraw.Draw(img).rounded_rectangle([0, 0, W - 1, H - 1], 26, fill=tinta)
+        ImageDraw.Draw(img).rounded_rectangle([10, 10, W - 11, H - 11], 20, outline=(255, 255, 255, 230), width=6)
+        x = 50
+        if emo:
+            img.alpha_composite(emo, (x, (H - emo.height) // 2))
+            x += emo.width + 26
+        img.alpha_composite(t, (x, (H - t.height) // 2))
+        img = sombra(img, 18, (0, 10), 140)
+    else:
+        t = _texto(a["texto"].upper(), fonte("anton", 120), tinta)
+        W, H = t.width + 90, t.height + 70
+        img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ImageDraw.Draw(img).rounded_rectangle([6, 6, W - 7, H - 7], 18, outline=tinta, width=12)
+        img.alpha_composite(t, (45, 35))
+    img = img.rotate(a.get("giro", 8), expand=True, resample=Image.BICUBIC)
     S = int(max(img.size) * 1.7)
 
     def desenhar(tt):
@@ -219,9 +250,14 @@ def r_carimbo(a, c, dur):
             e, al = 1.05, 1
         else:
             e, al = 1.0, 1
-        _colar(tela, img, S / 2, S / 2, e, al * _alfa_saida(tt, dur))
+        q = int(tt * FPS) - int(0.18 * FPS)
+        dx, dy = ([(6, -4), (-5, 3), (3, -2), (-2, 1)][q] if 0 <= q < 4 else (0, 0))
+        _colar(tela, img, S / 2 + dx, S / 2 + dy, e, al * _alfa_saida(tt, dur))
         return tela
-    return S, S, desenhar, [("impacto_seco", 0.12, -11)]
+    sons = [("impacto_seco", 0.12, -11)]
+    if a.get("som"):
+        sons.append((a["som"], 0.16, a.get("db", -13), True))
+    return S, S, desenhar, sons
 
 
 def r_destaque(a, c, dur):
@@ -308,6 +344,72 @@ def r_barra(a, c, dur):
     return W, H, desenhar, [("whoosh_sobe", 0.05, -17)]
 
 
+def r_emoji(a, c, dur):
+    """Emoji que pula na tela: cresce passando do ponto, balança e flutua um pouquinho."""
+    img = _emoji(a["emoji"], a.get("tam", 240))
+    W = H = int(max(img.size) * 1.6)
+    giro = a.get("giro", 10)
+
+    def desenhar(t):
+        tela = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        if t < 0.12:
+            e = 1.25 * ease_out(t / 0.12)
+        elif t < 0.22:
+            e = 1.25 - 0.32 * ease_out((t - 0.12) / 0.1)
+        elif t < 0.32:
+            e = 0.93 + 0.07 * ease_out((t - 0.22) / 0.1)
+        else:
+            e = 1.0 + 0.03 * math.sin((t - 0.32) * 5)
+        ang = giro * math.sin(t * 9) * math.exp(-t * 2.2)
+        b = img.rotate(ang, expand=True, resample=Image.BICUBIC) if abs(ang) > 0.3 else img
+        _colar(tela, b, W / 2, H / 2 - 14 * min(1, t / max(0.5, dur)), e, _alfa_saida(t, dur))
+        return tela
+    som = a.get("som", "pop")
+    return W, H, desenhar, ([(som, 0.0, a.get("db", -15))] if som else [])
+
+
+def r_chuva(a, c, dur):
+    """Chuva de emoji pela tela inteira: "sobe" (corações subindo), "cai" ou "explode"
+    (estouro a partir de um ponto)."""
+    import random
+    rnd = random.Random(a.get("semente", 7))
+    n = a.get("n", 14)
+    modo = a.get("modo", "sobe")
+    base = _emoji(a["emoji"], 150)
+    W, H = LARGURA, 1920
+    cx, cy = a.get("cx", W / 2), a.get("cy", H * 0.55)
+    ps = []
+    for _ in range(n):
+        tam = rnd.uniform(0.45, 1.0)
+        img = base.resize((int(base.width * tam), int(base.height * tam)), Image.LANCZOS)
+        if modo == "explode":
+            ang = rnd.uniform(0, 2 * math.pi)
+            v = rnd.uniform(700, 1300)
+            ps.append((img, cx, cy, v * math.cos(ang), v * math.sin(ang) - 500, rnd.uniform(0, 0.12)))
+        else:
+            x = rnd.uniform(80, W - 80)
+            y0 = H + 120 if modo == "sobe" else -120
+            v = rnd.uniform(650, 1100) * (-1 if modo == "sobe" else 1)
+            ps.append((img, x, y0, rnd.uniform(-40, 40), v, rnd.uniform(0, 0.6)))
+
+    def desenhar(t):
+        tela = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        for img, x0, y0, vx, vy, atraso in ps:
+            tt = t - atraso
+            if tt <= 0:
+                continue
+            if modo == "explode":
+                x, y = x0 + vx * tt, y0 + vy * tt + 900 * tt * tt
+                al = max(0.0, 1 - tt / 1.2)
+            else:
+                x, y = x0 + vx * tt + 30 * math.sin(tt * 4 + x0), y0 + vy * tt
+                al = 1.0
+            _colar(tela, img, x, y, 1.0, al * _alfa_saida(t, dur))
+        return tela
+    som = a.get("som", "brilho")
+    return W, H, desenhar, ([(som, 0.0, a.get("db", -17))] if som else [])
+
+
 def r_texto(a, c, dur):
     """Texto no estilo yap: serifa elegante (ou manuscrita), branco, sombra suave.
     a: texto (\\n quebra), fonte ("instrument", "instrument-italico", "kalam"), tam,
@@ -333,12 +435,17 @@ def r_texto(a, c, dur):
             partes.append(_texto(q, fk, BRANCO))
     from .estilos import halo
     img = halo(_empilhar(partes, 6))
-    W, H = img.width, img.height + 40
+    W, H = int(img.width * 1.1), int((img.height + 40) * 1.1)
+    pulo = a.get("pulo", True)
 
     def desenhar(t):
         tela = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        p = ease_out(t / 0.45)
-        _colar(tela, img, W / 2, H / 2 + 30 * (1 - p), 1.0, p * _alfa_saida(t, dur))
+        p = ease_out(t / 0.4)
+        if pulo:   # entra crescendo, passa um tiquinho do tamanho e assenta
+            e = 0.86 + 0.2 * ease_out(t / 0.18) if t < 0.18 else 1.06 - 0.06 * ease_out((t - 0.18) / 0.16)
+        else:
+            e = 1.0
+        _colar(tela, img, W / 2, H / 2 + 24 * (1 - p), e, min(1, t / 0.12) * _alfa_saida(t, dur))
         return tela
     som = a.get("som", "pop")
     return W, H, desenhar, ([(som, 0.0, a.get("db", -20))] if som else [])
@@ -367,10 +474,11 @@ def r_chamada(a, c, dur):
 
 RECEITAS = {"impacto": r_impacto, "lista": r_lista, "passo": r_passo, "numero": r_numero,
             "notificacao": r_notificacao, "carimbo": r_carimbo, "destaque": r_destaque,
-            "comentario": r_comentario, "barra": r_barra, "chamada": r_chamada, "texto": r_texto}
+            "comentario": r_comentario, "barra": r_barra, "chamada": r_chamada, "texto": r_texto,
+            "emoji": r_emoji, "chuva": r_chuva}
 POSICAO = {"impacto": "alto", "lista": "meio", "passo": "alto", "numero": "alto",
            "notificacao": "topo", "carimbo": "meio", "destaque": "ponto", "comentario": "baixo",
-           "barra": "alto", "chamada": "meio", "texto": "meio"}
+           "barra": "alto", "chamada": "meio", "texto": "meio", "emoji": "ponto", "chuva": "ponto"}
 
 
 def posicionar(tipo, W, H, a, zona_rosto):

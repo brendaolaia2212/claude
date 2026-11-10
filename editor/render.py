@@ -68,6 +68,8 @@ def render_parte(nome, ini, fim, saida, rapido=False):
     est = ed.get("estilo", {})
     destaque = est.get("cor", COR_PADRAO)
     corte = p / "corte.mp4"
+    if ed.get("fx") and (p / "corte_fx.mp4").exists():
+        corte = p / "corte_fx.mp4"     # zoom, tremor e flash já aplicados no vídeo dela
     dur_corte = sondar(corte)["duracao"]
     fim = min(fim, dur_corte)
     D = fim - ini
@@ -127,7 +129,9 @@ def render_parte(nome, ini, fim, saida, rapido=False):
             bloqueios.append((t0, t0 + dur_a, y, y + H))
         else:
             oculto.append((t0, D))
-        sfx += [{"t": t0 + ts, "tipo": tipo, "db": db} for tipo, ts, db in sons_a]
+        for som in sons_a:
+            tipo, ts, db = som[:3]
+            sfx.append({"t": t0 + ts, "tipo": tipo, "db": db, "junto": len(som) > 3 and bool(som[3])})
 
     # legenda e gancho: camadas de imagens com duração
     palavras = [dict(w, s=w["s"] - ini, e=w["e"] - ini)

@@ -268,7 +268,12 @@ URL_MODELO_RUIDO = ("https://raw.githubusercontent.com/GregorR/rnnoise-models/ma
                     "somnolent-hogwash-2018-09-01/sh.rnnn")
 
 
-def _filtro_limpar_som():
+# "melhorar_voz": menos embolado nos graves, mais presença, "s" mais macio, volume mais estável
+VOZ = ("equalizer=f=200:t=q:w=1.0:g=-2.5,equalizer=f=3000:t=q:w=1.2:g=2.5,deesser=i=0.45,"
+       "acompressor=threshold=0.1:ratio=2.5:attack=8:release=160:makeup=1.3,alimiter=limit=0.95")
+
+
+def _filtro_limpar_som(melhorar_voz=False):
     """Tira ruído de fundo (ventilador, rua, chiado) sem mexer no volume da voz.
     RNNoise (rede treinada em fala) quando o modelo baixa; senão, o filtro de ruído do ffmpeg."""
     if not MODELO_RUIDO.exists():
@@ -278,9 +283,10 @@ def _filtro_limpar_som():
             rodar(["curl", "-sSLf", "-o", str(MODELO_RUIDO), URL_MODELO_RUIDO])
         except Exception:
             pass
+    extra = "," + VOZ if melhorar_voz else ""
     if MODELO_RUIDO.exists():
-        return f"highpass=f=75,arnndn=m={MODELO_RUIDO}:mix=0.85"
-    return "highpass=f=75,afftdn=nr=14:nf=-42:tn=1"
+        return f"highpass=f=75,arnndn=m={MODELO_RUIDO}:mix=0.85{extra}"
+    return f"highpass=f=75,afftdn=nr=14:nf=-42:tn=1{extra}"
 
 
 def montar(nome):
@@ -319,7 +325,8 @@ def montar(nome):
         fades = [[0.01, 0.01]] * len(segs)
     if info["tem_som"]:
         bruto = tmp / "som_original.wav"
-        limpeza = ["-af", _filtro_limpar_som()] if ed.get("limpar_som") else []
+        limpeza = (["-af", _filtro_limpar_som(ed.get("melhorar_voz", False))]
+                   if ed.get("limpar_som") or ed.get("melhorar_voz") else [])
         ffmpeg("-i", ed["original"], "-map", "0:a:0", "-vn", *limpeza, "-ac", 2, "-ar", sr,
                "-c:a", "pcm_s16le", bruto)
         with wave.open(str(bruto), "rb") as f:
