@@ -22,6 +22,7 @@ Três documentos mandam aqui. Leia antes de começar:
 - Uma decisão por vez. Ao dar opções, numere e diga qual recomenda.
 - Mostre em vez de descrever: mande imagem (mostruário, quadros) quando pedir uma escolha.
 - Antes de etapa demorada, diga mais ou menos quanto tempo leva.
+- Se algo travar (link fechado, vídeo que não baixa, erro), avise na hora, já dizendo o que ela precisa fazer. Nada de ficar tentando em silêncio (pedido dela).
 - "Decide você" → decida, conte em uma linha e siga.
 - Mandar arquivo pra ela: use `SendUserFile` (imagem com `display: "render"`, vídeo também). Toda vez que entregar vídeo, lembre: "Toque no vídeo, depois em compartilhar e em Salvar vídeo. Ele vai pra sua galeria."
 
@@ -62,6 +63,8 @@ Quando ela mandar uma aula ou pedir "versão YouTube": `"formato": "16:9"` no `e
 - `{"tipo": "camera", "de": 581, "ate": 590, "efeito": "orbit"}`: o efeito no próprio vídeo dela, com desenho do movimento. Efeitos: `dollyin dollyout orbit tracking pan tilt craneup handheld static pov macro closeup mediumshot wideshot shallowdepth deepfocus rackfocus slowmotion speedramp hyperlapse softlight goldenhour cinematic naturaldaylight motionblur glitch vhs particulas glow reveal 9:16 16:9`.
 
 Palavra ouvida errado: corrija em `transcricao.json` antes de `planejar` sem apagar entradas (junte trocando o texto da primeira e deixando as outras com `""`), pra os índices não mudarem. Cortes decididos lendo a fala: `"tirar_palavras": [[i, j], ...]`. Amostra com `aula --trechos`, vídeo inteiro com `aula`. Entregue também a lista de capítulos pro texto do YouTube. Se ela disser que não precisa de amostra, vá direto pro vídeo inteiro (mas confira a folha de quadros antes). O envio pelo chat aceita no máximo 400 MB e daqui não dá pra subir no Drive dela: pra vídeo longo, gere a cópia de envio com `aula.para_envio(nome)` (Full HD, ~360 MB, duas passadas; 34 min levam uns 40 min) e mande essa. Ela pode salvar no Drive pelo compartilhar do celular.
+
+**Pra ela baixar no celular** (o app trava com arquivo de 360 MB; ela baixa direto no telefone): mande a cópia leve de `aula.para_celular(nome)`, em HEVC, o mesmo formato que o iPhone dela grava, com uns 110 MB. Um vídeo de 9 a 10 minutos fica quase igual ao original. Vale pra qualquer vídeo comprido (yap, aula), não só aula.
 
 ### O arquivo `edicao.json`
 

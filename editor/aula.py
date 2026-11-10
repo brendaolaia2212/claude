@@ -1148,3 +1148,29 @@ def para_envio(nome, arquivo="final.mp4", alvo_mb=360, saida=None, preset="mediu
     for f in p.glob("_passe*"):
         f.unlink()
     return saida, round(saida.stat().st_size / 1048576, 1)
+
+
+def para_celular(nome, arquivo="final.mp4", alvo_mb=110, saida=None, preset="medium"):
+    """Cópia leve pra baixar direto no celular (o app trava com arquivo de 360 MB).
+    HEVC (o mesmo formato que o iPhone dela grava) em duas passadas: com ~110 MB um
+    vídeo de 9 min fica quase igual ao original. Marca hvc1 pro iPhone e o Instagram
+    abrirem; som AAC 128k."""
+    p = pasta(nome)
+    D = sondar(p / arquivo)["duracao"]
+    som_k = 128
+    video_k = int(alvo_mb * 1048576 * 8 / D / 1000) - som_k - 16
+    saida = p / (saida or f"{Path(arquivo).stem}-celular.mp4")
+    stats = p / "_x265.log"
+    comum = ["-c:v", "libx265", "-preset", preset, "-b:v", f"{video_k}k", "-tag:v", "hvc1",
+             "-pix_fmt", "yuv420p"]
+    for passe in (1, 2):
+        params = f"pass={passe}:stats={stats}:log-level=error"
+        if passe == 1:
+            ffmpeg("-i", p / arquivo, "-an", *comum, "-x265-params", params, "-f", "null", "/dev/null")
+        else:
+            ffmpeg("-i", p / arquivo, *comum, "-x265-params",
+                   params + f":vbv-maxrate={2 * video_k}:vbv-bufsize={4 * video_k}",
+                   "-c:a", "aac", "-b:a", f"{som_k}k", "-movflags", "+faststart", saida)
+    for f in p.glob("_x265.log*"):
+        f.unlink()
+    return saida, round(saida.stat().st_size / 1048576, 1)
