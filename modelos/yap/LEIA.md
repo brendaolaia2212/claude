@@ -21,3 +21,15 @@ pelo nome do vídeo novo). A ordem:
 
 Camadas: animação que começa antes fica por baixo. Chuva de emoji junto com texto: a chuva
 começa uns 0,15 s antes, pra o texto ficar por cima.
+
+## Estilo maduro (pedido dela no episódio 3: "sem ser infantil, sou uma mulher madura e respeitada")
+
+`eventos_maduro.py`: sem emoji e sem som de desenho (boing, buzina, caixa registradora). Os
+ganchos são as frases dela em cartão de serifa (itálico nas frases mais fortes, Kalam só nos
+comentários leves), sem som nos momentos de emoção. Aproximação rápida e suave (1,08 a 1,12)
+nas reações; aproximação lenta (1,06) no desabafo, sempre terminando numa emenda pra não dar
+pulo de volta. Gancho do 1º segundo tirado de uma frase forte do fim do vídeo, e a mesma frase
+volta como cartão quando ela fala (o vídeo fecha o que abriu).
+
+- `juntar_janela.py A B`: escuta do medium só dentro de [A, B] (a parte da abertura do pacote).
+- `minusculas.py`: legenda com maiúscula só no começo de frase e em nome próprio.

@@ -318,7 +318,15 @@ def _quebrar_simples(texto, f, larg):
         else:
             linhas.append(atual)
             atual = p
-    return linhas + ([atual] if atual else [])
+    linhas = linhas + ([atual] if atual else [])
+    if len(linhas) == 2:
+        # duas linhas equilibradas: nada de uma palavra sozinha embaixo ("abrindo as compras da minha / mãe")
+        ps = texto.split()
+        opcoes = [(" ".join(ps[:k]), " ".join(ps[k:])) for k in range(1, len(ps))]
+        cabem = [o for o in opcoes if max(_medir(f, o[0])[0], _medir(f, o[1])[0]) <= larg]
+        if cabem:
+            linhas = list(min(cabem, key=lambda o: max(_medir(f, o[0])[0], _medir(f, o[1])[0])))
+    return linhas
 
 
 def _empilhar(partes, espaco):
