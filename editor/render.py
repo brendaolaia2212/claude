@@ -1,4 +1,7 @@
-"""Montagem final (ou de uma amostra) em cima do corte.mp4 aprovado."""
+"""Montagem final (ou de uma amostra) em cima do corte.mp4 aprovado.
+
+"tela_cheia" (conteúdo na tela toda, ela numa moldura no canto) é montada por editor/telacheia.py.
+"""
 import json
 import re
 
@@ -130,6 +133,8 @@ def render_parte(nome, ini, fim, saida, rapido=False):
                                                n_in, atual, rapido)
         y_fixo += yf
         sfx += sf
+        oculto += [(float(t["inicio"]) - ini, float(t["fim"]) - ini) for t in ed["tela_cheia"]
+                   if t.get("legenda") is False]
 
     # animações (gravadas antes, pra saber onde ficam e esconder a legenda se cobrirem a faixa)
     anims, bloqueios = [], []
@@ -210,8 +215,10 @@ def _audio(nome, ed, corte, ini, D, sfx, tmp):
         voz_i = float(_loudnorm_medir(voz)["input_i"])
         alvo = max(-60, voz_i - float(trilha.get("abaixo_db", 22)))
         entradas += ["-stream_loop", "-1", "-i", trilha["arquivo"]]
+        sai = min(1.5, D / 4)                   # trilha some suave no fim (sem parar seco)
         filtros.append(f"[0:a]asplit[vz][sc];[{n}:a]atrim=0:{D:.3f},aresample=48000,"
-                       f"aformat=channel_layouts=stereo,loudnorm=I={alvo:.1f}:TP=-6,apad,atrim=0:{D:.3f}[mus];"
+                       f"aformat=channel_layouts=stereo,loudnorm=I={alvo:.1f}:TP=-6,apad,atrim=0:{D:.3f},"
+                       f"afade=t=in:d=0.05,afade=t=out:st={D - sai:.3f}:d={sai:.3f}[mus];"
                        f"[mus][sc]sidechaincompress=threshold=0.03:ratio=5:attack=15:release=350[md]")
         mix = ["[vz]", "[md]"]
         n += 1

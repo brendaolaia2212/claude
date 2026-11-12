@@ -101,7 +101,7 @@ Você edita esse arquivo direto (com as ferramentas de arquivo) a cada decisão 
 - Sons: `whoosh`, `whoosh_sobe`, `swish`, `pop`, `clique`, `tique`, `ding`, `impacto`, `impacto_seco`, `rabisco`, `teclado`. Cada animação já traz o seu.
 - `nomes_dificeis` entra antes de `transcrever` (ajuda a ouvir marca e produto). Em vídeo de IA, ponha "IA", "Cria Aí!" e "prompt".
 - Sem `chamada`, o vídeo termina sem cartão (é o padrão pra ela, ver `voz/voz-no-editor.md`).
-- `tela_cheia` (conteúdo ocupando a tela, ela numa moldura pequena no canto): `[{"imagem": "/tela.png"` ou `"video": "/clipe.mp4", "de": 0, "inicio": 12, "fim": 16.5, "canto": "cima-dir"|"cima-esq"|"baixo-dir"|"baixo-esq", "moldura": 0.36}]`; opcionais `entrada` (desliza/sobe/corte), `recorte` [x0,y0,x1,y1] (pra deixar preço de fora), `encaixe: "caber"`, `rolar`, `legenda_y`/`legenda: false` (detalhes em `editor/telacheia.py`).
+- `tela_cheia` (conteúdo ocupando a tela, ela numa moldura pequena no canto): `[{"imagem": "/tela.png"` ou `"video": "/clipe.mp4", "de": 0, "inicio": 12, "fim": 16.5, "canto": "cima-dir"|"cima-esq"|"baixo-dir"|"baixo-esq", "moldura": 0.36}]`; opcionais `entrada` (desliza/sobe/corte), `recorte` [x0,y0,x1,y1] (pra deixar preço de fora), `encaixe: "caber"`, `rolar`, `legenda_y`/`legenda: false`; no trecho a legenda ganha placa escura translúcida (`placa: false` tira) (detalhes em `editor/telacheia.py`).
 
 ### Antes de mandar qualquer vídeo
 

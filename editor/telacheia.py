@@ -15,13 +15,16 @@ Opcionais:
   "rolar": true                 imagem comprida desce de cima até embaixo (em vez do zoom lento)
   "aperto": 0.75                quanto do quadro dela entra na moldura (menor = ela maior)
   "borda": "#FF6A00"            cor da borda da moldura
-  "legenda_y": 1450             centro da legenda nesse trecho (ex. numa faixa lisa do conteúdo)
+  "legenda_y": 1450             centro da legenda nesse trecho (ex. numa faixa lisa do conteúdo, sem placa)
   "legenda": false              sem legenda nesse trecho
+  "placa": false                tira a placa escura translúcida que a legenda ganha nesse trecho
 
 O conteúdo ocupa 1080x1920 (imagem parada ganha zoom lento 1,00→1,06). Ela aparece na moldura
 9:16 com cantos arredondados, borda laranja e sombra, recortada pelo rosto, dentro da zona segura.
 A moldura surge com escala 0,85→1 em 0,2 s; no fim volta pra ela em tela cheia com corte seco.
-O som é sempre o dela. A legenda fica na altura de sempre e só sobe se a moldura estiver embaixo.
+O som é sempre o dela. A legenda fica na altura de sempre e só sobe se a moldura estiver embaixo;
+nesse trecho ela ganha uma placa escura translúcida (cor "fundo" do estilo) pra ler em cima de
+print claro e cheio de texto (Fita e Discreta já têm faixa própria).
 """
 import math
 import subprocess
@@ -151,7 +154,8 @@ def _clipe_imagem(tc, saida, t0, n, dur, rapido):
 
 def montar(ed, ini, D, corte, rostos, tmp, entradas, filtros, n_in, atual, rapido=False):
     """Põe as telas cheias do trecho [ini, ini+D] no grafo do render (mexe em entradas e filtros).
-    Devolve (atual, n_in, y_fixo, sfx): y_fixo = [(a, b, y0, y1)] faixa da moldura pra legenda."""
+    Devolve (atual, n_in, y_fixo, sfx): y_fixo = [(a, b, y0, y1, placa)] faixa da moldura pra legenda
+    (ou (a, b, y) com legenda_y)."""
     y_fixo, sfx = [], []
     h = 0.5 / FPS
     # com -ss os quadros do corte caem em off + n/FPS dentro do pedaço (ini nem sempre cai num quadro)
@@ -183,7 +187,9 @@ def montar(ed, ini, D, corte, rostos, tmp, entradas, filtros, n_in, atual, rapid
         filtros.append(f"[{nc}:v]setpts=PTS-STARTPTS,fps={FPS},scale={LARGURA}:{ALTURA}:"
                        f"force_original_aspect_ratio=increase,crop={LARGURA}:{ALTURA},setsar=1,"
                        f"format=yuv420p,setpts=PTS+{a0:.4f}/TB[tc{k}]")
-        mov = f"if(lt(t,{a + ENTRADA:.4f}),{{L}}*pow(1-(t-({a:.4f}))/{ENTRADA},3),0)"
+        # o deslize conta de um quadro antes: o 1º quadro do trecho já mostra o conteúdo entrando
+        s0 = a - 1 / FPS
+        mov = f"if(lt(t,{s0 + ENTRADA:.4f}),{{L}}*pow(1-(t-({s0:.4f}))/{ENTRADA},3),0)"
         x = f"'{mov.format(L=LARGURA)}'" if entrada == "desliza" else "0"
         y = f"'{mov.format(L=ALTURA)}'" if entrada == "sobe" else "0"
         filtros.append(f"{atual}[tc{k}]overlay=x={x}:y={y}:enable='between(t,{a0 - h:.4f},{b - h:.4f})'[tv{k}]")
@@ -194,11 +200,11 @@ def montar(ed, ini, D, corte, rostos, tmp, entradas, filtros, n_in, atual, rapid
         # 2) ela na moldura do canto: entrada própria do corte (só o trecho), recortada pelo rosto
         x0, y0, wo, ho = geometria(tc)
         if tc.get("legenda") is False:
-            y_fixo.append((a0, b, 0, ALTURA))            # faixa = tela toda: a legenda some no trecho
+            pass                                         # sem legenda: render.py põe o trecho em "oculto"
         elif tc.get("legenda_y"):
             y_fixo.append((a0, b, float(tc["legenda_y"])))   # centro da legenda escolhido a dedo
         else:
-            y_fixo.append((a0, b, y0 - BORDA, y0 + ho + 26))
+            y_fixo.append((a0, b, y0 - BORDA, y0 + ho + 26, tc.get("placa", True) is not False))
         am = g(a + (0.0 if entrada == "corte" else ATRASO))
         am0 = max(am, off)
         if b - am0 < 1 / FPS:
