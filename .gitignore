@@ -5,3 +5,4 @@ __pycache__/
 recursos/modelos/*.rnnn
 recursos/modelos/depth_v2s*.onnx
 recursos/modelos/modnet.onnx
+recursos/trilhas/*.wav

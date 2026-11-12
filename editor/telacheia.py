@@ -23,6 +23,7 @@ O conteúdo ocupa 1080x1920 (imagem parada ganha zoom lento 1,00→1,06). Ela ap
 A moldura surge com escala 0,85→1 em 0,2 s; no fim volta pra ela em tela cheia com corte seco.
 O som é sempre o dela. A legenda fica na altura de sempre e só sobe se a moldura estiver embaixo.
 """
+import math
 import subprocess
 
 import numpy as np
@@ -153,12 +154,17 @@ def montar(ed, ini, D, corte, rostos, tmp, entradas, filtros, n_in, atual, rapid
     Devolve (atual, n_in, y_fixo, sfx): y_fixo = [(a, b, y0, y1)] faixa da moldura pra legenda."""
     y_fixo, sfx = [], []
     h = 0.5 / FPS
+    # com -ss os quadros do corte caem em off + n/FPS dentro do pedaço (ini nem sempre cai num quadro)
+    off = math.ceil(ini * FPS - 1e-6) / FPS - ini
+
+    def g(t):
+        return off + round((t - off) * FPS) / FPS
     for k, tc in enumerate(ed.get("tela_cheia", [])):
         if not (tc.get("imagem") or tc.get("video")):
             continue
         i0, i1 = _q(float(tc["inicio"])), _q(float(tc["fim"]))
-        a, b = i0 - ini, min(i1 - ini, D)
-        a0 = max(a, 0.0)                       # onde começa dentro deste pedaço
+        a, b = g(i0 - ini), min(g(i1 - ini), D)        # na grade de quadros deste pedaço
+        a0 = max(a, off)                       # onde começa dentro deste pedaço
         if b - a0 < 1 / FPS:
             continue
         dur = b - a0
@@ -193,8 +199,8 @@ def montar(ed, ini, D, corte, rostos, tmp, entradas, filtros, n_in, atual, rapid
             y_fixo.append((a0, b, float(tc["legenda_y"])))   # centro da legenda escolhido a dedo
         else:
             y_fixo.append((a0, b, y0 - BORDA, y0 + ho + 26))
-        am = a + (0.0 if entrada == "corte" else ATRASO)
-        am0 = max(am, 0.0)
+        am = g(a + (0.0 if entrada == "corte" else ATRASO))
+        am0 = max(am, off)
         if b - am0 < 1 / FPS:
             continue
         wi, hi = wo - 2 * BORDA, ho - 2 * BORDA
@@ -208,7 +214,7 @@ def montar(ed, ini, D, corte, rostos, tmp, entradas, filtros, n_in, atual, rapid
         _enfeite(wo, ho, tc.get("borda", LARANJA)).save(enfeite)
         _arredondado(wi, hi, RAIO).save(mascara)
         td = f"{b - am0 + 0.1:.3f}"
-        entradas += ["-ss", f"{ini + am0:.3f}", "-t", td, "-i", str(corte),
+        entradas += ["-ss", f"{ini + am0 - 0.25 / FPS:.4f}", "-t", td, "-i", str(corte),
                      "-loop", "1", "-framerate", str(FPS), "-t", td, "-i", str(enfeite),
                      "-loop", "1", "-framerate", str(FPS), "-t", td, "-i", str(mascara)]
         nh, nd, nm = n_in, n_in + 1, n_in + 2
@@ -223,7 +229,7 @@ def montar(ed, ini, D, corte, rostos, tmp, entradas, filtros, n_in, atual, rapid
                 break
             passos.append((am + j / FPS, e))
         t_cheia = am + len(passos) / FPS
-        passos = [(t, e) for t, e in passos if t >= -h]
+        passos = [(t, e) for t, e in passos if t >= off - h]
         Cw, Ch = wo + 2 * MARGEM, ho + 2 * MARGEM
         mx, my = x0 + wo / 2, y0 + ho / 2
         ramos = "".join(f"[pp{k}_{j}]" for j in range(len(passos) + 1))
@@ -236,11 +242,13 @@ def montar(ed, ini, D, corte, rostos, tmp, entradas, filtros, n_in, atual, rapid
                        f"setpts=PTS+{am0:.4f}/TB" + (f",split={len(passos) + 1}{ramos}" if passos else f"[pp{k}_0]"))
         for j, (t, e) in enumerate(passos):
             w2, h2 = int(round(Cw * e / 2)) * 2, int(round(Ch * e / 2)) * 2
-            filtros.append(f"[pp{k}_{j}]trim=start={t - h:.4f}:end={t + h:.4f},scale={w2}:{h2}[pq{k}_{j}];"
+            # o trim fica folgado (meio quadro antes, quase um depois): o fim arredonda pro quadro
+            # seguinte e o quadro t nunca se perde; o enable é que escolhe o quadro exato
+            filtros.append(f"[pp{k}_{j}]trim=start={t - h:.4f}:end={t + 1.8 * h:.4f},scale={w2}:{h2}[pq{k}_{j}];"
                            f"{atual}[pq{k}_{j}]overlay={mx - w2 / 2:.0f}:{my - h2 / 2:.0f}:format=auto:"
                            f"enable='between(t,{t - h:.4f},{t + h:.4f})'[pv{k}_{j}]")
             atual = f"[pv{k}_{j}]"
         filtros.append(f"{atual}[pp{k}_{len(passos)}]overlay={x0 - MARGEM}:{y0 - MARGEM}:format=auto:"
-                       f"enable='between(t,{max(t_cheia, 0) - h:.4f},{b - h:.4f})'[pw{k}]")
+                       f"enable='between(t,{max(t_cheia, off) - h:.4f},{b - h:.4f})'[pw{k}]")
         atual = f"[pw{k}]"
     return atual, n_in, y_fixo, sfx
