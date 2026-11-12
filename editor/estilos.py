@@ -211,7 +211,7 @@ def bloco_gancho(estilo, texto, destaque, fundo=None, sobre=None, sub=None):
 
     if estilo == "yap":
         tam = 124
-        while max(_medir(fonte("instrument", tam), l)[0] for l in linhas) > LARG_MAX and tam > 70:
+        while max(_medir(fonte("instrument", tam), l)[0] for l in linhas) > LARG_MAX - 60 and tam > 70:
             tam -= 6
         f = fonte("instrument", tam)
         partes = []
@@ -222,6 +222,8 @@ def bloco_gancho(estilo, texto, destaque, fundo=None, sobre=None, sub=None):
             partes.append(_recortar(_bloco_palavras([l], [f], [BRANCO], 0, PRETO, 0, larg_max=4000)))
         if sub:
             fk = fonte("kalam", 54)
+            respiro = Image.new("RGBA", (1, 16), (0, 0, 0, 0))     # o sub não encosta no título
+            partes.append(respiro)
             for l in _quebrar_simples(sub, fk, LARG_MAX - 40):
                 partes.append(_recortar(_bloco_palavras([l], [fk], [BRANCO], 0, PRETO, 0, larg_max=4000)))
         return halo(_empilhar(partes, 2))

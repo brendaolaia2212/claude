@@ -472,13 +472,147 @@ def r_chamada(a, c, dur):
     return card.width, card.height, desenhar, [("ding", 0.05, -15)]
 
 
+def r_frase(a, c, dur):
+    """Frase forte dela, em letras grandes, palavra por palavra no tempo da fala.
+
+    a: palavras = [{"w": "palavra", "t": segundos desde o início}], tam (padrão 132),
+    fonte ("instrument" | "instrument-italico"), destaques = [índices] (itálico na cor de
+    destaque), cor_ativa (a palavra recém-dita brilha um instante), som (padrão nenhum)."""
+    from .estilos import halo
+    larg = ZONA_X[1] - ZONA_X[0]
+    pal = [dict(p) for p in a["palavras"] if p["w"].strip()]
+    destaques = set(a.get("destaques", []))
+    nome_f = a.get("fonte", "instrument")
+    acento = cor(a.get("cor_destaque", "#F6D7A7"))
+    tam = int(a.get("tam", 132))
+
+    quebras = set(a.get("quebras", []))        # índice da palavra que abre cada linha nova
+
+    def palavra(t, ff, cor_, fontes):
+        """Palavra numa caixa de altura fixa (mesma linha de base pra todas): sem 'que' flutuando."""
+        asc = max(x.getmetrics()[0] for x in fontes)
+        desc = max(x.getmetrics()[1] for x in fontes)
+        w = int(ff.getlength(t)) + 24
+        im = Image.new("RGBA", (w, asc + desc + 8), (0, 0, 0, 0))
+        ImageDraw.Draw(im).text((12, 4 + asc - ff.getmetrics()[0]), t, font=ff, fill=cor_)
+        bb = im.getbbox()
+        return im.crop((bb[0], 0, bb[2], im.height)) if bb else im
+
+    def montar(tam):
+        f, fi = fonte(nome_f, tam), fonte("instrument-italico", tam)
+        esp = int(tam * 0.26)
+        imgs = []
+        for k, p in enumerate(pal):
+            ff = fi if k in destaques else f
+            t = p["w"]
+            imgs.append((palavra(t, ff, acento if k in destaques else BRANCO, (f, fi)), ff))
+        # quebra gulosa e depois equilibra (sem palavra sozinha na última linha)
+        linhas, atual, w_at = [], [], 0
+        for k, (im, _) in enumerate(imgs):
+            w = im.width + (esp if atual else 0)
+            if atual and (w_at + w > larg or k in quebras):
+                linhas.append(atual)
+                atual, w_at = [k], im.width
+            else:
+                atual.append(k)
+                w_at += w
+        if atual:
+            linhas.append(atual)
+        if not quebras and len(linhas) >= 2 and len(linhas[-1]) == 1 and len(linhas[-2]) > 2:
+            linhas[-1].insert(0, linhas[-2].pop())
+        return imgs, linhas, esp
+
+    while True:
+        imgs, linhas, esp = montar(tam)
+        if len(linhas) <= 4 or tam <= 84:
+            break
+        tam -= 8
+    alt_l = int(tam * 1.08)
+    pad = 60
+    W = larg + 2 * pad
+    H = alt_l * len(linhas) + 2 * pad
+    pos = {}
+    for li, ks in enumerate(linhas):
+        wl = sum(imgs[k][0].width for k in ks) + esp * (len(ks) - 1)
+        x = pad + (larg - wl) / 2
+        for k in ks:
+            im = imgs[k][0]
+            pos[k] = (x + im.width / 2, pad + li * alt_l + alt_l / 2)
+            x += im.width + esp
+    # cada palavra com o halo escuro do yap (legível em fundo claro)
+    prontas = []
+    for im, _ in imgs:
+        tela = Image.new("RGBA", (im.width + 80, im.height + 80), (0, 0, 0, 0))
+        tela.alpha_composite(im, (40, 40))
+        prontas.append(halo(tela))
+    ativa_c = cor(a.get("cor_ativa", "#FFE8C2"))
+    brilho = []
+    for k, (im, _) in enumerate(imgs):
+        if k in destaques:
+            brilho.append(None)
+            continue
+        b = Image.new("RGBA", (im.width + 80, im.height + 80), (0, 0, 0, 0))
+        b.alpha_composite(palavra(pal[k]["w"], imgs[k][1], ativa_c, (fonte(nome_f, tam), fonte("instrument-italico", tam))), (40, 40))
+        brilho.append(b)
+    tempos = [max(0.0, p["t"]) for p in pal]
+
+    def desenhar(t):
+        tela = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        sai = _alfa_saida(t, dur)
+        for k in range(len(pal)):
+            dt = t - tempos[k]
+            if dt < 0:
+                continue
+            p = ease_out(min(1.0, dt / 0.16))
+            cx, cy = pos[k]
+            _colar(tela, prontas[k], cx, cy + 22 * (1 - p), 0.92 + 0.08 * p, p * sai)
+            if brilho[k] is not None and dt < 0.45:
+                _colar(tela, brilho[k], cx, cy + 22 * (1 - p), 0.92 + 0.08 * p, (1 - dt / 0.45) * p * sai)
+        return tela
+    som = a.get("som")
+    return W, H, desenhar, ([(som, 0.0, a.get("db", -18))] if som else [])
+
+
+def r_polaroid(a, c, dur):
+    """Foto instantânea de um momento do vídeo (a revelação do produto): moldura branca,
+    legenda manuscrita, cai girando de leve, fica e sai. a: imagem (caminho), recorte
+    [x0, y0, x1, y1] no quadro, legenda, giro, largura (px da foto), som (padrão nenhum)."""
+    import random
+    foto = Image.open(a["imagem"]).convert("RGB")
+    if a.get("recorte"):
+        foto = foto.crop(tuple(int(v) for v in a["recorte"]))
+    lw = int(a.get("largura", 520))
+    foto = foto.resize((lw, int(foto.height * lw / foto.width)), Image.LANCZOS)
+    borda, base = int(lw * 0.06), int(lw * 0.24)
+    card = Image.new("RGBA", (foto.width + 2 * borda, foto.height + borda + base), (250, 248, 244, 255))
+    card.paste(foto, (borda, borda))
+    if a.get("legenda"):
+        t = _texto(a["legenda"], fonte("kalam", int(base * 0.42)), (40, 36, 34, 255))
+        if t.width > card.width - 2 * borda:
+            t = t.resize((card.width - 2 * borda, int(t.height * (card.width - 2 * borda) / t.width)), Image.LANCZOS)
+        card.alpha_composite(t, ((card.width - t.width) // 2, foto.height + borda + (base - t.height) // 2))
+    giro = float(a.get("giro", -6))
+    card = sombra(card, 18, (0, 10), 120)
+    W = H = int(max(card.width, card.height) * 1.25)
+
+    def desenhar(t):
+        tela = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        p = ease_out(min(1.0, t / 0.35))
+        ang = giro * (0.4 + 0.6 * p) + (1 - p) * 12
+        im = card.rotate(ang, expand=True, resample=Image.BICUBIC)
+        _colar(tela, im, W / 2, H / 2 - 60 * (1 - p), 1.15 - 0.15 * p, min(1.0, t / 0.12) * _alfa_saida(t, dur))
+        return tela
+    som = a.get("som")
+    return W, H, desenhar, ([(som, 0.0, a.get("db", -16))] if som else [])
+
+
 RECEITAS = {"impacto": r_impacto, "lista": r_lista, "passo": r_passo, "numero": r_numero,
             "notificacao": r_notificacao, "carimbo": r_carimbo, "destaque": r_destaque,
             "comentario": r_comentario, "barra": r_barra, "chamada": r_chamada, "texto": r_texto,
-            "emoji": r_emoji, "chuva": r_chuva}
+            "emoji": r_emoji, "chuva": r_chuva, "frase": r_frase, "polaroid": r_polaroid}
 POSICAO = {"impacto": "alto", "lista": "meio", "passo": "alto", "numero": "alto",
            "notificacao": "topo", "carimbo": "meio", "destaque": "ponto", "comentario": "baixo",
-           "barra": "alto", "chamada": "meio", "texto": "meio", "emoji": "ponto", "chuva": "ponto"}
+           "barra": "alto", "chamada": "meio", "texto": "meio", "emoji": "ponto", "chuva": "ponto", "frase": "meio", "polaroid": "ponto"}
 
 
 def posicionar(tipo, W, H, a, zona_rosto):
@@ -493,9 +627,10 @@ def posicionar(tipo, W, H, a, zona_rosto):
     if POSICAO[tipo] == "topo" or not zona_rosto:
         return x, int(pref)
     _, z0, _, z1 = zona_rosto
-    if pref + H <= z0 or pref >= z1:
+    folga = 50 if tipo == "frase" else 20
+    if pref + H <= z0 - folga or pref >= z1 + folga:
         return x, int(pref)
-    cima, baixo = z0 - H - 20, z1 + 20
+    cima, baixo = z0 - H - folga, z1 + folga
     opcoes = [y for y in (cima, baixo) if ZONA_Y[0] - 40 <= y and y + H <= ZONA_Y[1] + 40]
     if opcoes:
         return x, int(min(opcoes, key=lambda y: abs(y - pref)))

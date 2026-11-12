@@ -168,6 +168,9 @@ def render_parte(nome, ini, fim, saida, rapido=False):
 
     if est.get("sons", True) is False:
         sfx = []
+    if ed.get("sons_so_extras"):
+        # só os efeitos escolhidos a dedo em "sons_extra" (pedido dela: 5 ou 6 no vídeo todo)
+        sfx = []
     sfx = sons.espalhar([s for s in ed.get("sons_extra", []) if ini <= s["t"] < fim] + sfx)
     audio = _audio(nome, ed, corte, ini, D, sfx, tmp)
     ffmpeg("-i", video, "-i", audio, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac",

@@ -70,7 +70,7 @@ class Rostos:
         x0 = min(c["x"] for c in caixas)
         x1 = max(c["x"] + c["w"] for c in caixas)
         y0 = min(c["olhos"] - 0.12 * c["h"] for c in caixas)
-        y1 = max(c["boca"] + 0.08 * c["h"] for c in caixas)
+        y1 = max(max(c["boca"] + 0.08 * c["h"], c["y"] + 1.04 * c["h"]) for c in caixas)   # queixo inteiro
         return (x0, y0, x1, y1)
 
     def centro(self):

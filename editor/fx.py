@@ -107,6 +107,10 @@ def _pedaco(args):
     ed = ler_edicao(nome)
     eventos = sorted(ed.get("fx", []), key=lambda e: e["inicio"])
     rostos = Rostos(ler_json(p / "rosto.json", []))
+    comp = None
+    if ed.get("fundo") is not None and (p / "fundo_alfa.npy").exists():
+        from .fundo import Compositor
+        comp = Compositor(nome)          # fundo desfocado + luz no rosto, antes do zoom
     info = sondar(p / "corte.mp4")
     L, A = info["largura"], info["altura"]
     dec = subprocess.Popen(["ffmpeg", "-hide_banner", "-loglevel", "error", "-ss", f"{q0 / FPS:.6f}",
@@ -129,6 +133,8 @@ def _pedaco(args):
             frame = np.frombuffer(buf, np.uint8).reshape(A, L, 3)
             ultimo = frame
         t = q / FPS
+        if comp is not None:
+            frame = comp.aplicar(frame, q)
         ativos = [e for e in eventos if e["inicio"] <= t < e["fim"]]
         if ativos:
             frame = transformar(frame.copy(), ativos, t, rostos)
@@ -139,6 +145,37 @@ def _pedaco(args):
     if enc.wait() != 0:
         raise RuntimeError(f"Falhou ao gravar o pedaço {q0}-{q1}")
     return saida
+
+
+def centro_movimento(nome, t0, t1, rosto_fora=True):
+    """Onde as mãos estão trabalhando entre t0 e t1 (tempo do corte): centro do movimento
+    na metade de baixo do quadro, fora do rosto. Pro zoom de "foco na mão" ao abrir o pacote."""
+    import cv2
+    p = pasta(nome)
+    info = sondar(p / "corte.mp4")
+    L, A = info["largura"], info["altura"]
+    w, h = L // 4, A // 4
+    dec = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-ss", f"{t0:.3f}", "-t", f"{t1 - t0:.3f}",
+                          "-i", str(p / "corte.mp4"), "-vf", f"fps=10,scale={w}:{h}", "-f", "rawvideo",
+                          "-pix_fmt", "gray", "-"], capture_output=True).stdout
+    n = len(dec) // (w * h)
+    if n < 2:
+        return [L / 2, A * 0.62]
+    fr = np.frombuffer(dec[: n * w * h], np.uint8).reshape(n, h, w).astype(np.float32)
+    mov = np.abs(np.diff(fr, axis=0)).sum(axis=0)
+    mov[: int(h * 0.30)] = 0                      # cabeça e fundo lá em cima não contam
+    if rosto_fora:
+        rost = Rostos(ler_json(p / "rosto.json", []))
+        for d in rost.dados:
+            if d["rosto"] and t0 - 0.5 <= d["t"] <= t1 + 0.5:
+                r = d["rosto"]
+                mov[int(r["y"] / 4):int((r["y"] + r["h"] * 1.2) / 4), int(r["x"] / 4):int((r["x"] + r["w"]) / 4)] = 0
+    mov = cv2.GaussianBlur(mov, (0, 0), 6)
+    lim = np.percentile(mov, 97)
+    ys, xs = np.nonzero(mov >= lim)
+    pesos = mov[ys, xs]
+    cx, cy = float((xs * pesos).sum() / pesos.sum()) * 4, float((ys * pesos).sum() / pesos.sum()) * 4
+    return [round(cx), round(cy)]
 
 
 def aplicar(nome, trabalhadores=3):

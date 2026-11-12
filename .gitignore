@@ -3,3 +3,5 @@ recursos/sons/
 __pycache__/
 *.pyc
 recursos/modelos/*.rnnn
+recursos/modelos/depth_v2s*.onnx
+recursos/modelos/modnet.onnx

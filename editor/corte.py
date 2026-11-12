@@ -162,6 +162,20 @@ def planejar(nome):
     else:
         trechos = _juntar_trechos(manter, palavras, sil, dur)
         arriscados, fades = [], None
+    # momentos sem fala que ficam inteiros (ela levantando a calça, mostrando no corpo)
+    extra = [[float(a), float(b)] for a, b in ed.get("manter_tempos", [])]
+    if extra:
+        todos = sorted([list(x) for x in trechos] + _quantizar(extra))
+        unidos = []
+        for a, b in todos:
+            if unidos and a <= unidos[-1][1] + 0.02:
+                unidos[-1][1] = max(unidos[-1][1], b)
+            else:
+                unidos.append([a, b])
+        trechos = unidos
+        if en:
+            fades = [[0.04 if en.tem_som(a + 0.012) else 0.01, 0.04 if en.tem_som(b - 0.012) else 0.01]
+                     for a, b in trechos]
 
     pausas = sum(1 for a, b in zip(trechos, trechos[1:]) if b[0] - a[1] > PAUSA_MAX)
     final = sum(e - s for s, e in trechos)
@@ -273,9 +287,12 @@ VOZ = ("equalizer=f=200:t=q:w=1.0:g=-2.5,equalizer=f=3000:t=q:w=1.2:g=2.5,deesse
        "acompressor=threshold=0.1:ratio=2.5:attack=8:release=160:makeup=1.3,alimiter=limit=0.95")
 
 
-def _filtro_limpar_som(melhorar_voz=False):
+def _filtro_limpar_som(melhorar_voz=False, forte=False):
     """Tira ruído de fundo (ventilador, rua, chiado) sem mexer no volume da voz.
-    RNNoise (rede treinada em fala) quando o modelo baixa; senão, o filtro de ruído do ffmpeg."""
+    RNNoise (rede treinada em fala) quando o modelo baixa; senão, o filtro de ruído do ffmpeg.
+    forte=True ("limpar_som": "forte"): gravação baixa com ronco de rua/ventilador. RNNoise
+    inteiro + um segundo passe espectral; nas pausas o ruído cai uns 23 dB e o fim fraco das
+    palavras fica igual (medido no episódio 4)."""
     if not MODELO_RUIDO.exists():
         try:
             MODELO_RUIDO.parent.mkdir(parents=True, exist_ok=True)
@@ -285,6 +302,9 @@ def _filtro_limpar_som(melhorar_voz=False):
             pass
     extra = "," + VOZ if melhorar_voz else ""
     if MODELO_RUIDO.exists():
+        if forte:
+            return (f"highpass=f=90,lowpass=f=14000,arnndn=m={MODELO_RUIDO}:mix=1.0,"
+                    f"afftdn=nr=10:nf=-48:tn=1{extra}")
         return f"highpass=f=75,arnndn=m={MODELO_RUIDO}:mix=0.85{extra}"
     return f"highpass=f=75,afftdn=nr=14:nf=-42:tn=1{extra}"
 
@@ -325,7 +345,7 @@ def montar(nome):
         fades = [[0.01, 0.01]] * len(segs)
     if info["tem_som"]:
         bruto = tmp / "som_original.wav"
-        limpeza = (["-af", _filtro_limpar_som(ed.get("melhorar_voz", False))]
+        limpeza = (["-af", _filtro_limpar_som(ed.get("melhorar_voz", False), ed.get("limpar_som") == "forte")]
                    if ed.get("limpar_som") or ed.get("melhorar_voz") else [])
         ffmpeg("-i", ed["original"], "-map", "0:a:0", "-vn", *limpeza, "-ac", 2, "-ar", sr,
                "-c:a", "pcm_s16le", bruto)
@@ -395,19 +415,25 @@ def _transcricao_do_corte(nome, segs):
     mapa = corte_para_original(segs)
     out = []
     for i, w in enumerate(palavras):
-        if i not in manter:
+        if i not in manter or not w["w"].strip():
             continue
+        ws_, we_ = w["s"], w["e"]
+        if we_ - ws_ < 0.08:                   # palavra de tempo quase zero: dá uns 0,12 s pra ela
+            ws_, we_ = ws_ - 0.02, ws_ + 0.12
         # o trecho com maior sobreposição fica com a palavra (o whisper erra as bordas)
         melhor, sob = None, 0.0
         for a, b, s in mapa:
             e = s + (b - a)
-            o = min(e, w["e"]) - max(s, w["s"])
+            o = min(e, we_) - max(s, ws_)
             if o > sob:
                 melhor, sob = (a, b, s), o
-        if melhor and sob >= min(0.06, 0.3 * (w["e"] - w["s"])):
+        if melhor and sob >= min(0.06, 0.3 * (we_ - ws_)):
             a, b, s = melhor
-            out.append({"w": w["w"], "s": round(max(a, a + w["s"] - s), 3),
-                        "e": round(min(b, a + w["e"] - s), 3)})
+            ini, fim = max(a, a + ws_ - s), min(b, a + we_ - s)
+            partes = w["w"].split()
+            passo = (fim - ini) / len(partes)
+            for k, pt in enumerate(partes):        # "E obviamente" -> duas palavras na legenda
+                out.append({"w": pt, "s": round(ini + k * passo, 3), "e": round(ini + (k + 1) * passo, 3)})
     (p / "transcricao_corte.json").write_text(json.dumps(out, ensure_ascii=False, indent=1))
     # emendas: pro zoom e pra não pôr animação em cima do pulo
     (p / "emendas.json").write_text(json.dumps([round(a, 3) for a, _, _ in mapa][1:]))
