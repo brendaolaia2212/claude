@@ -84,7 +84,8 @@ for f in sorted(dec["frases"], key=lambda f: f["de"]):
     pal = [{"w": TROCA.get(str(i), ws[i]["w"].strip()), "t": round(max(0.0, para(ws[i]["s"], "inicio") - t0), 3)} for i in ids]
     dest = [k for k, i in enumerate(ids) if i in set(f.get("destaque", []))]
     A.append({"tipo": "frase", "palavras": pal, "destaques": dest, "quebras": f.get("quebras", []),
-              "inicio": t0, "fim": t1, "som": None, "_fala_fim": fim(ids[-1], 0.0)})
+              "inicio": t0, "fim": t1, "som": None, "_fala_fim": fim(ids[-1], 0.0),
+              **{k: f[k] for k in ("tam", "y") if k in f}})
     ocupado.append((t0, t1))
 for a in A:
     a.pop("_fala_fim", None)
@@ -95,13 +96,17 @@ for c in dec.get("cartoes_leves", []):
     if not ids:
         continue
     t0, t1 = ini(ids[0], 0.12), fim(ids[-1], 0.7)
+    e_ = next((e for e in emendas if e > fim(ids[-1], 0.0)), None)   # não atravessa a emenda seguinte
+    if e_ is not None and e_ < t1:
+        t1 = round(e_ - 0.03, 3)
     if c.get("fim_max") == "antes_foco_mao":
         VIS0 = json.loads((S / "visual.json").read_text())
         t1 = min(t1, corte_t(VIS0["foco_mao"][0]["de"]) - 0.15)
     if any(t0 < b and t1 > a for a, b in ocupado):
         AVISOS.append(f"cartão encavalado, saiu: {c['texto']}")
         continue
-    A.append({"tipo": "texto", "texto": c["texto"], "fonte": "kalam", "tam": 96, "som": None, "inicio": t0, "fim": t1})
+    A.append({"tipo": "texto", "texto": c["texto"], "fonte": "kalam", "tam": 96, "som": None, "inicio": t0, "fim": t1,
+              **{k: c[k] for k in ("y",) if k in c}})
     ocupado.append((t0, t1))
 
 # ---------------- abrir o pacote: foco na mão (suspense) e revelação ----------------

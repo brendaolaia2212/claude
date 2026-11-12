@@ -476,7 +476,7 @@ def r_frase(a, c, dur):
     """Frase forte dela, em letras grandes, palavra por palavra no tempo da fala.
 
     a: palavras = [{"w": "palavra", "t": segundos desde o início}], tam (padrão 132),
-    fonte ("instrument" | "instrument-italico"), destaques = [índices] (itálico na cor de
+    fonte ("instrument" | "archivo" | ...), fonte_destaque (padrão "instrument-italico"), destaques = [índices] (na cor de
     destaque), cor_ativa (a palavra recém-dita brilha um instante), som (padrão nenhum)."""
     from .estilos import halo
     larg = ZONA_X[1] - ZONA_X[0]
@@ -499,7 +499,7 @@ def r_frase(a, c, dur):
         return im.crop((bb[0], 0, bb[2], im.height)) if bb else im
 
     def montar(tam):
-        f, fi = fonte(nome_f, tam), fonte("instrument-italico", tam)
+        f, fi = fonte(nome_f, tam), fonte(a.get("fonte_destaque", "instrument-italico"), tam)
         esp = int(tam * 0.26)
         imgs = []
         for k, p in enumerate(pal):
@@ -552,7 +552,7 @@ def r_frase(a, c, dur):
             brilho.append(None)
             continue
         b = Image.new("RGBA", (im.width + 80, im.height + 80), (0, 0, 0, 0))
-        b.alpha_composite(palavra(pal[k]["w"], imgs[k][1], ativa_c, (fonte(nome_f, tam), fonte("instrument-italico", tam))), (40, 40))
+        b.alpha_composite(palavra(pal[k]["w"], imgs[k][1], ativa_c, (fonte(nome_f, tam), fonte(a.get("fonte_destaque", "instrument-italico"), tam))), (40, 40))
         brilho.append(b)
     tempos = [max(0.0, p["t"]) for p in pal]
 

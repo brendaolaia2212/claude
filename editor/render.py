@@ -15,7 +15,8 @@ ZOOM = 1.08
 
 
 def _entre(intervalos):
-    return "+".join(f"between(t,{a:.3f},{b:.3f})" for a, b in intervalos) or "0"
+    # o fim fica de fora (o 1º quadro do plano seguinte não herda o efeito do anterior)
+    return "+".join(f"(gte(t,{a:.3f})*lt(t,{b - 0.005:.3f}))" for a, b in intervalos) or "0"
 
 
 def _gancho(camada, ed, rostos, ini, D):
@@ -85,6 +86,14 @@ def render_parte(nome, ini, fim, saida, rapido=False):
     # zoom nos cortes: alterna 1,00 e 1,08 a cada emenda, centrado no rosto
     if est.get("zoom", True):
         emendas = [0.0] + ler_json(p / "emendas.json", []) + [dur_corte]
+        _f, _i = [emendas[0]], 1                  # trecho minúsculo (< 0,5 s) não ganha nível próprio
+        while _i < len(emendas) - 1:
+            if _i + 1 < len(emendas) - 1 and emendas[_i + 1] - emendas[_i] < 0.5:
+                _i += 2
+                continue
+            _f.append(emendas[_i])
+            _i += 1
+        emendas = _f + [emendas[-1]]
         trechos = [(emendas[k] - ini, emendas[k + 1] - ini) for k in range(1, len(emendas) - 1, 2)]
         trechos = [(max(0, a), min(D, b)) for a, b in trechos if b > 0 and a < D]
         if trechos:
@@ -180,7 +189,7 @@ def render_parte(nome, ini, fim, saida, rapido=False):
 
 def _loudnorm_medir(arquivo, filtro_antes=""):
     r = rodar(["ffmpeg", "-hide_banner", "-i", str(arquivo), "-af",
-               f"{filtro_antes}loudnorm=I=-14:TP=-1:LRA=11:print_format=json", "-f", "null", "-"])
+               f"{filtro_antes}loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"])
     return json.loads(re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", r.stderr).group(0))
 
 
@@ -217,7 +226,7 @@ def _audio(nome, ed, corte, ini, D, sfx, tmp):
     m = _loudnorm_medir(misturado)
     final = tmp / "audio_final.wav"
     ffmpeg("-i", misturado, "-af",
-           f"loudnorm=I=-14:TP=-1:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
+           f"loudnorm=I=-14:TP=-1.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
            f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:"
            f"linear=true,aresample=48000,apad,atrim=0:{D:.3f}", "-ar", 48000, final)
     return final
