@@ -3,6 +3,7 @@
 As mensagens saem em português simples: a IA repassa pra pessoa com as palavras dela."""
 import argparse
 import json
+import os
 import re
 import shutil
 import sys
@@ -168,7 +169,7 @@ def c_quadros(a):
     from .conferir import folha_de_quadros
     p = pasta(a.nome)
     tempos = [_tempo(t) for t in a.tempos]
-    print(folha_de_quadros(p / a.arquivo, tempos, p / f"quadros_{int(time.time())}.jpg"))
+    print(folha_de_quadros(p / a.arquivo, tempos, p / f"quadros_{int(time.time())}_{os.getpid()}.jpg"))
 
 
 def c_amostra(a):

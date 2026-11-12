@@ -44,7 +44,8 @@
    "por_que": "Prova social dita com humildade (3:28); faz quem chegou agora sentir que entrou em algo maior e dá movimento ao trecho de contexto.",
    "quebras": [
     2,
-    5
+    4,
+    7
    ]
   },
   {
@@ -70,6 +71,7 @@
    "por_que": "Humor maduro (6:41) no trecho em que ela prova a calça; mantém o ritmo.",
    "quebras": [
     3,
+    4,
     7
    ]
   },
@@ -83,21 +85,8 @@
    "por_que": "A virada do episódio (7:45), a mais citável: resume a série inteira. Entra devagar, sem som e sem pulo (zona sensível 7:21-8:40).",
    "quebras": [
     5,
-    9
-   ]
-  },
-  {
-   "de": 741,
-   "ate": 748,
-   "texto": "que estava esperando voltar para a própria vida.",
-   "destaque": [
-    744,
-    748
-   ],
-   "por_que": "Payoff do gancho (8:28), logo depois de 'existe uma mulher' (que ficou no gancho, então não há sobreposição de índices). Sem som, entrada lenta.",
-   "quebras": [
-    2,
-    4
+    9,
+    11
    ]
   },
   {
@@ -124,7 +113,9 @@
    ],
    "por_que": "A frase mais forte (10:47). Depende das correções 1070, 1071 e 1074 ('falecer', conferido no áudio pelo medium e pela guardiã). Sem som, entrada sóbria.",
    "quebras": [
-    3
+    1,
+    3,
+    6
    ]
   },
   {
@@ -136,51 +127,63 @@
    ],
    "por_que": "A pergunta mais íntima (11:02); o 'eu' em destaque dá o peso de ser a filha abrindo.",
    "quebras": [
+    1,
     3,
     6
    ]
   },
   {
    "de": 1195,
+   "ate": 1200,
+   "texto": "a gente não precisa de muito",
+   "destaque": [
+    1200
+   ],
+   "quebras": [
+    2,
+    4
+   ],
+   "por_que": "reflexão (1ª parte)"
+  },
+  {
+   "de": 1201,
    "ate": 1207,
-   "texto": "a gente não precisa de muito para ser protagonista da nossa própria história.",
+   "texto": "para ser protagonista da nossa própria história.",
    "destaque": [
     1203
    ],
-   "por_que": "Reflexão final na versão humilde que ela mesma falou (12:10), em vez do 'seja protagonista' com tom de coach. Gera salvamento e compartilhamento.",
    "quebras": [
-    4,
-    8,
-    9
-   ]
+    2,
+    3,
+    5
+   ],
+   "por_que": "reflexão (2ª parte)"
   },
   {
    "de": 1238,
-   "ate": 1250,
-   "texto": "ela sabia de uma maneira ímpar construir enredo e colocar tempero na vida.",
+   "ate": 1243,
+   "texto": "ela sabia de uma maneira ímpar",
    "destaque": [
-    1243,
-    1248
+    1243
    ],
-   "por_que": "Fecho emocional (12:27) com o jeito da mãe; 'tempero' conversa com a mãe chefe de cozinha. 'Isso ela sabia' fica de fora pra virar zoom de reação logo depois.",
    "quebras": [
     2,
-    6,
-    9
-   ]
+    4
+   ],
+   "por_que": "arremate (1ª parte)"
   },
   {
-   "de": 731,
-   "ate": 740,
-   "texto": "por trás de cada pacote desse aqui, existe uma mulher",
+   "de": 1244,
+   "ate": 1250,
+   "texto": "construir enredo e colocar tempero na vida.",
    "destaque": [
-    740
+    1248
    ],
    "quebras": [
-    3,
-    7
+    2,
+    4
    ],
-   "por_que": "resposta do gancho"
+   "por_que": "arremate (2ª parte)"
   },
   {
    "de": 240,
@@ -205,27 +208,109 @@
    ],
    "quebras": [
     2,
-    5
+    4,
+    6
    ],
    "por_que": "buraco depois do pico"
+  },
+  {
+   "de": 731,
+   "ate": 737,
+   "texto": "por trás de cada pacote desse aqui,",
+   "destaque": [],
+   "quebras": [
+    2,
+    5
+   ],
+   "por_que": "resposta do gancho (1ª parte)"
+  },
+  {
+   "de": 738,
+   "ate": 748,
+   "texto": "existe uma mulher que estava esperando voltar para a própria vida.",
+   "destaque": [
+    740,
+    744,
+    748
+   ],
+   "quebras": [
+    3,
+    5,
+    7
+   ],
+   "por_que": "resposta do gancho (2ª parte)"
+  },
+  {
+   "de": 17,
+   "ate": 23,
+   "texto": "continuaram chegando mesmo depois que ela partiu,",
+   "destaque": [
+    23
+   ],
+   "quebras": [
+    1,
+    2,
+    4
+   ],
+   "por_que": "premissa da série logo depois do gancho"
+  },
+  {
+   "de": 617,
+   "ate": 624,
+   "texto": "eu não consegui abrir nenhum desses pacotes sozinha.",
+   "destaque": [
+    624
+   ],
+   "quebras": [
+    3,
+    5,
+    7
+   ],
+   "por_que": "maior vazio (3:38-4:09)"
+  },
+  {
+   "de": 863,
+   "ate": 874,
+   "texto": "E eu vou contar a história dela aos poucos aqui para vocês.",
+   "destaque": [
+    868
+   ],
+   "quebras": [
+    4,
+    7,
+    10
+   ],
+   "por_que": "promessa da série"
+  },
+  {
+   "de": 1275,
+   "ate": 1278,
+   "texto": "e escolha deixar legado.",
+   "destaque": [
+    1278
+   ],
+   "quebras": [
+    2
+   ],
+   "por_que": "última mensagem dela"
   }
  ],
  "cartoes_leves": [
   {
    "de": 469,
    "ate": 475,
-   "texto": "areia, terra,\nela gostava muito\nde plantas",
+   "texto": "areia? terra?\nela gostava muito\nde plantas",
    "fim_max": "antes_foco_mao"
   },
   {
    "de": 136,
    "ate": 144,
-   "texto": "esse era o maior hobby dela,\ncomprar na internet"
+   "texto": "esse era o maior\nhobby dela,\ncomprar na internet"
   },
   {
    "de": 973,
    "ate": 980,
-   "texto": "com suas manias, com seus desejos,\nteimosias, gostos"
+   "texto": "com suas manias,\ncom seus desejos,\nteimosias, gostos"
   }
  ],
  "reacoes_zoom": [
@@ -314,10 +399,10 @@
  ],
  "sons_tempo": [
   {
-   "t_orig": 278.0,
+   "t_orig": 282.15,
    "tipo": "suspense",
    "db": -21,
-   "momento": "mão abrindo o saco (zoom na mão)"
+   "momento": "fim do tirar do saco, subindo até ela levantar a calça"
   },
   {
    "t_orig": 286.3,
@@ -355,5 +440,68 @@
   "ate": 1125,
   "texto": "Episódio 5",
   "sobre": "amanhã"
- }
+ },
+ "trocas_frase": {
+  "167": "pra",
+  "65": "luto.",
+  "1098": "pacotes?"
+ },
+ "fx_extra": [
+  {
+   "tipo": "zoom",
+   "inicio": 42.05,
+   "fim": 43.35,
+   "escala": 1.1,
+   "entrada": 0.3,
+   "saida": 0.35,
+   "por_que": "vivendo com muita dor"
+  },
+  {
+   "tipo": "zoom",
+   "inicio": 119.28,
+   "fim": 120.58,
+   "escala": 1.1,
+   "entrada": 0.3,
+   "saida": 0.35,
+   "por_que": "virada pro unboxing"
+  },
+  {
+   "tipo": "zoom",
+   "inicio": 227.053,
+   "fim": 228.353,
+   "escala": 1.1,
+   "entrada": 0.3,
+   "saida": 0.35,
+   "por_que": "montando o novo guarda-roupa"
+  },
+  {
+   "tipo": "zoom",
+   "inicio": 370.1,
+   "fim": 371.4,
+   "escala": 1.1,
+   "entrada": 0.3,
+   "saida": 0.35,
+   "por_que": "É o que me pega tanto"
+  },
+  {
+   "tipo": "dolly",
+   "inicio": 274.233,
+   "fim": 278.0,
+   "escala": 1.04,
+   "por_que": "choro, sem recuo"
+  },
+  {
+   "tipo": "dolly",
+   "inicio": 80.3,
+   "fim": 83.9,
+   "escala": 1.04,
+   "por_que": "frase dura do começo, sem recuo"
+  }
+ ],
+ "fx_mover": [
+  {
+   "de": 195.83,
+   "para": 196.07
+  }
+ ]
 }

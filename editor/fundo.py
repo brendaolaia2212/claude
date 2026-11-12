@@ -152,6 +152,10 @@ class Compositor:
         for a_, b_ in segs:
             acc += b_ - a_
             self.emendas.append(int(round(acc * FPS)))
+        self._emendas_set = set(self.emendas)
+        # movimento: onde a imagem mexe (mão gesticulando, peça sendo erguida) a mediana no tempo
+        # apagaria a mão; ali vale a máscara crua dos quadros-chave vizinhos (união)
+        self._prev, self._prev_q, self._mov = None, None, None
 
     def _chave(self, i, q):
         """Máscara do quadro-chave i, mediana com os vizinhos do mesmo plano (sem piscar)."""
@@ -162,6 +166,29 @@ class Compositor:
             return np.median(np.stack([self.alfas[j] for j in viz]), axis=0).astype(np.float32) / 255
         return self.alfas[i].astype(np.float32) / 255
 
+    def _bruto(self, q):
+        """União das máscaras cruas dos dois quadros-chave em volta de q (mesmo plano)."""
+        i = max(0, bisect.bisect_right(self.quadros, q) - 1)
+        e = bisect.bisect_right(self.emendas, q) - 1
+        lo, hi = self.emendas[e], self.emendas[e + 1] if e + 1 < len(self.emendas) else 10 ** 9
+        viz = [j for j in (i, i + 1) if 0 <= j < len(self.quadros) and lo <= self.quadros[j] < hi] or [i]
+        return np.max(np.stack([self.alfas[j] for j in viz]), axis=0).astype(np.float32) / 255
+
+    def _movimento(self, frame, q):
+        import cv2
+        peq = cv2.cvtColor(cv2.resize(frame, (BW, BH), interpolation=cv2.INTER_AREA),
+                           cv2.COLOR_RGB2GRAY).astype(np.float32)
+        if self._prev is not None and q == self._prev_q + 1 and q not in self._emendas_set:
+            d = cv2.GaussianBlur(np.abs(peq - self._prev), (0, 0), 2)
+            self._mov = d if self._mov is None else np.maximum(d, self._mov * 0.85)
+        else:
+            self._mov = None
+        self._prev, self._prev_q = peq, q
+        if self._mov is None:
+            return None
+        m = (self._mov > 10).astype(np.uint8)
+        return cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))) > 0
+
     def _alfa(self, q):
         i = bisect.bisect_right(self.quadros, q) - 1
         if i < 0:
@@ -169,6 +196,12 @@ class Compositor:
         if i + 1 >= len(self.quadros):
             return self._chave(len(self.quadros) - 1, q)
         q0, q1 = self.quadros[i], self.quadros[i + 1]
+        e = bisect.bisect_right(self.emendas, q) - 1           # não mistura máscara de outro plano
+        lo, hi = self.emendas[e], self.emendas[e + 1] if e + 1 < len(self.emendas) else 10 ** 9
+        if q1 >= hi:
+            return self._chave(i, q)
+        if q0 < lo:
+            return self._chave(i + 1, q)
         w = (q - q0) / max(1, q1 - q0)
         return self._chave(i, q) * (1 - w) + self._chave(i + 1, q) * w
 
@@ -199,26 +232,41 @@ class Compositor:
         A, L = frame.shape[:2]
         t = q / FPS
         a = self._alfa(q)
+        mov = self._movimento(frame, q)
+        if mov is not None and mov.any():
+            bruto = cv2.dilate(self._bruto(q), np.ones((5, 5), np.uint8))   # cobre o caminho entre chaves
+            a = np.where(mov, np.maximum(a, bruto), a)
         # o rosto é sempre primeiro plano (segurança contra máscara errada)
         r = self._rosto(t)
         if r is not None:
             sx, sy = BW / L, BH / A
             cx, cy = (r["x"] + r["w"] / 2) * sx, (r["y"] + r["h"] / 2) * sy
             face = np.zeros_like(a)
-            cv2.ellipse(face, (int(cx), int(cy)), (int(r["w"] * sx * 0.6), int(r["h"] * sy * 0.75)), 0, 0, 360, 1, -1)
+            cv2.ellipse(face, (int(cx), int(cy)), (int(r["w"] * sx * 0.55), int(r["h"] * sy * 0.68)), 0, 0, 360, 1, -1)
             a = self._ilhas(a, face)
+            # logo acima da cabeça é teto/parede parado: sem auréola nítida (mão erguida ali fica)
+            topo_cab = int((r["y"] - 0.30 * r["h"]) * sy)
+            if topo_cab > 2:
+                xa, xb = max(0, int((r["x"] - 0.2 * r["w"]) * sx)), int((r["x"] + 1.2 * r["w"]) * sx)
+                cima = a[:topo_cab, xa:xb]
+                fixo = ~mov[:topo_cab, xa:xb] if mov is not None else np.ones_like(cima, bool)
+                a[:topo_cab, xa:xb] = np.where(fixo, 0.0, cima)
             if any(x0 <= t < x1 for x0, x1 in self.teto_fora):
                 topo = max(0, int((r["y"] - 0.35 * r["h"]) * sy))
-                mesa = int(BH * 0.62)
                 a[:topo] = 0
-                faixa = int(r["w"] * sx * 2.6)
-                a[:mesa, : max(0, int(cx) - faixa)] = 0
-                a[:mesa, int(cx) + faixa:] = 0
-            a = np.maximum(a, cv2.GaussianBlur(face, (0, 0), 3))
-        for x0, x1 in self.sem_desfoque:           # rampa de 0,3 s na entrada e na saída
-            if x0 - 0.3 <= t <= x1 + 0.3:
-                k = min(1.0, (t - (x0 - 0.3)) / 0.3, ((x1 + 0.3) - t) / 0.3)
-                a = np.maximum(a, np.clip(k, 0, 1))
+                # cortina/parede dos lados só até a linha dos ombros (cotovelos e mãos ficam)
+                ombro = int((r["y"] + 1.25 * r["h"]) * sy)
+                faixa = int(r["w"] * sx * 3.0)
+                a[:ombro, : max(0, int(cx) - faixa)] = 0
+                a[:ombro, int(cx) + faixa:] = 0
+            a = np.maximum(a, cv2.GaussianBlur(face, (0, 0), 2))
+        for x0, x1 in self.sem_desfoque:           # rampa de 0,3 s (sem rampa quando cai numa emenda)
+            r0 = 0.0 if any(abs(x0 * FPS - e) <= 1 for e in self.emendas) else 0.3
+            r1 = 0.0 if any(abs(x1 * FPS - e) <= 1 for e in self.emendas) else 0.3
+            if x0 - r0 <= t < x1 + r1:
+                k0 = 1.0 if r0 == 0 else (t - (x0 - r0)) / r0
+                k1 = 1.0 if r1 == 0 else ((x1 + r1) - t) / r1
+                a = np.maximum(a, float(np.clip(min(1.0, k0, k1), 0, 1)))
         # borda fina presa na imagem (meia resolução)
         mw, mh = L // 2, A // 2
         guia = cv2.cvtColor(cv2.resize(frame, (mw, mh), interpolation=cv2.INTER_AREA), cv2.COLOR_RGB2GRAY)

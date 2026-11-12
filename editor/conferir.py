@@ -59,7 +59,9 @@ def frases_meta(nome):
 
 def folha_de_quadros(video, tempos, saida, rotulos=None, colunas=3):
     """Vários quadros numa imagem só, com o tempo escrito embaixo de cada um."""
-    tmp = saida.parent / "_q.png"
+    import os
+    import uuid
+    tmp = saida.parent / f"_q_{os.getpid()}_{uuid.uuid4().hex[:8]}.png"   # um por chamada: conferências em paralelo não se misturam
     larg, alt = 360, 640
     imgs = []
     for k, t in enumerate(tempos):

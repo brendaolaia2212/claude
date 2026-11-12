@@ -67,15 +67,21 @@ for f in sorted(dec["frases"], key=lambda f: f["de"]):
         continue
     t0 = ini(ids[0], 0.12)
     t1 = fim(ids[-1], 0.9)
+    # se ela continua falando logo depois, a frase sai antes (a legenda comum não engole a fala)
+    prox = next((j for j in range(ids[-1] + 1, len(ws)) if j in manter and ws[j]["w"].strip()), None)
+    if prox is not None:
+        t1 = round(min(t1, max(fim(ids[-1], 0.35), ini(prox, 0.0) - 0.02)), 3)
     # frase anterior colada: só a sobra do fim encosta -> a anterior sai um instante antes desta entrar
     if A and A[-1]["tipo"] == "frase" and A[-1]["fim"] > t0 and A[-1]["_fala_fim"] <= t0 + 0.15:
         t0 = round(max(t0, A[-1]["_fala_fim"]), 3)
-        A[-1]["fim"] = round(t0 - 0.03, 3)
+        A[-1]["fim"] = round(max(A[-1]["_fala_fim"] + 0.05, t0 - 0.2), 3)  # a saída (0,2 s) termina quando a próxima entra
+        t0 = round(max(t0, A[-1]["fim"]), 3)
         ocupado[-1] = (ocupado[-1][0], A[-1]["fim"])
     if any(t0 < b and t1 > a for a, b in ocupado):
         AVISOS.append(f"frase encavalada, saiu: {f['texto']}")
         continue
-    pal = [{"w": ws[i]["w"].strip(), "t": round(max(0.0, para(ws[i]["s"], "inicio") - t0), 3)} for i in ids]
+    TROCA = dec.get("trocas_frase", {})
+    pal = [{"w": TROCA.get(str(i), ws[i]["w"].strip()), "t": round(max(0.0, para(ws[i]["s"], "inicio") - t0), 3)} for i in ids]
     dest = [k for k, i in enumerate(ids) if i in set(f.get("destaque", []))]
     A.append({"tipo": "frase", "palavras": pal, "destaques": dest, "quebras": f.get("quebras", []),
               "inicio": t0, "fim": t1, "som": None, "_fala_fim": fim(ids[-1], 0.0)})
@@ -104,7 +110,8 @@ for z in VIS["foco_mao"]:
     t0, t1 = corte_t(z["de"]), corte_t(z["ate"], "fim")
     if t1 - t0 < 1.0:
         continue
-    t1 = min(t1, emenda_depois(t0))
+    e_ = emenda_depois(t0)
+    t1 = e_ if e_ - t1 < 0.5 else min(t1, e_)          # vai até a emenda: sem voltar ao quadro aberto antes do corte
     centro = centro_movimento(NOME, t0, t1)
     FX.append({"tipo": "dolly", "inicio": t0, "fim": t1, "escala": z.get("escala", 1.32), "centro": centro})
 for r in VIS.get("revelacao", []):
@@ -149,6 +156,15 @@ if pr:
     A.append({"tipo": "texto", "texto": pr["texto"], "sobre": pr.get("sobre"), "tam": 128, "som": None,
               "inicio": t0, "fim": round(min(D - 0.05, t0 + 4.8), 3)})
 
+# ---------------- movimento extra (revisão) ----------------
+for mv in dec.get("fx_mover", []):
+    for x in FX:
+        if abs(x["inicio"] - mv["de"]) < 0.1:
+            x["fim"] = round(x["fim"] + mv["para"] - x["inicio"], 3)
+            x["inicio"] = mv["para"]
+for x in dec.get("fx_extra", []):
+    FX.append({k: v for k, v in x.items() if k != "por_que"})
+
 # ---------------- planos longos sem movimento: aproximação lenta até o corte ----------------
 for a_, b_ in zip(emendas, emendas[1:]):
     if b_ - a_ >= 5 and not any(x["inicio"] < b_ - 0.3 and x["fim"] > a_ + 0.3 for x in FX if x["tipo"] == "dolly"):
@@ -174,14 +190,24 @@ ed["sons_so_extras"] = True
 
 # ---------------- final ----------------
 ed["fundo"] = {"desfoque": 18, "escurecer": 0.86, "dessaturar": 0.18, "luz_rosto": 0.16,
-               "sem_desfoque": [[152.3, 154.6]], "teto_fora": [[169.4, 171.6], [199.3, 203.3]]}
+               "sem_desfoque": [[next(e for e in emendas if abs(e - 152.37) < 0.1), 154.6]], "teto_fora": [[169.4, 171.6], [199.3, 203.3]]}
 A.sort(key=lambda a: a["inicio"])
+for x in FX:                     # movimento que termina numa emenda acaba 1 quadro antes (não vaza no plano seguinte)
+    for e_ in emendas:
+        if abs(x["fim"] - e_) < 0.02:
+            x["fim"] = round(e_ - 0.005, 4)
 FX.sort(key=lambda e: e["inicio"])
 ed["animacoes"] = A
 ed["fx"] = FX
 ed["sons_extra"] = sorted(SX, key=lambda s: s["t"])
-ed["legenda_oculta"] = ([[a["inicio"], a["fim"]] for a in A if a["tipo"] in ("frase", "texto")]
-                        + [[0.0, ed["gancho"]["fim"]]])
+_oc = sorted([[a["inicio"], a["fim"]] for a in A if a["tipo"] in ("frase", "texto")] + [[0.0, ed["gancho"]["fim"]]])
+_jun = []
+for a_, b_ in _oc:               # frases coladas: um intervalo só (a legenda comum não pisca entre elas)
+    if _jun and a_ - _jun[-1][1] < 0.35:
+        _jun[-1][1] = max(_jun[-1][1], b_)
+    else:
+        _jun.append([a_, b_])
+ed["legenda_oculta"] = _jun
 ed.pop("chamada", None)
 (P / "edicao.json").write_text(json.dumps(ed, ensure_ascii=False, indent=2))
 _transcricao_do_corte(NOME, segs)
