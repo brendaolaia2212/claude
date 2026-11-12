@@ -194,8 +194,7 @@ for s_ in dec["sons"]:
 ed["sons_so_extras"] = True
 
 # ---------------- final ----------------
-ed["fundo"] = {"desfoque": 18, "escurecer": 0.86, "dessaturar": 0.18, "luz_rosto": 0.16,
-               "sem_desfoque": [[next(e for e in emendas if abs(e - 152.37) < 0.1), 154.6]], "teto_fora": [[169.4, 171.6], [199.3, 203.3]]}
+ed.pop("fundo", None)          # ela não gostou do fundo desfocado ("ficou horrível"): imagem normal
 A.sort(key=lambda a: a["inicio"])
 for x in FX:                     # movimento que termina numa emenda acaba 1 quadro antes (não vaza no plano seguinte)
     for e_ in emendas:
