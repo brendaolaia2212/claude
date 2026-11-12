@@ -1,5 +1,5 @@
 """Efeitos no próprio vídeo, em pé ou deitado: aproximação rápida (zoom), aproximação
-lenta (dolly), pulso, tremor e flash.
+lenta (dolly), pulso, tremor, flash e troca seca de enquadramento.
 
 As decisões ficam em edicao.json → "fx" (tempos no corte):
   {"tipo": "zoom", "inicio": 12.3, "fim": 14.0, "escala": 1.22, "centro": "rosto"}
@@ -7,6 +7,10 @@ As decisões ficam em edicao.json → "fx" (tempos no corte):
   {"tipo": "pulso", "inicio": 50.2, "fim": 50.6, "forca": 0.08}
   {"tipo": "tremor", "inicio": 61.0, "fim": 61.6, "forca": 16}
   {"tipo": "flash", "inicio": 70.0, "fim": 70.35, "forca": 0.85}
+  {"tipo": "enquadrar", "inicio": 80.0, "fim": 83.5, "escala": 1.14}
+"enquadrar" = troca de enquadramento SECA (sem animação): já entra na escala, centrada no
+rosto (centro fixo no trecho, como uma segunda câmera) e fica assim de inicio a fim. Serve pra
+trocar o enquadramento a cada frase.
 "centro": "rosto" (padrão, segue o rosto), "meio" (meio de baixo do quadro, onde ela
 mostra o produto) ou [x, y].
 
@@ -50,6 +54,15 @@ class Rostos:
                 return r["x"] + r["w"] / 2, r["y"] + r["h"] / 2
         return L / 2, A * 0.4
 
+    def centro_fixo(self, t0, t1, L, A):
+        """Centro mediano do rosto entre t0 e t1 (pra um enquadramento que não balança)."""
+        cs = [d["rosto"] for d in self.dados if d["rosto"] and t0 - 0.5 <= d["t"] <= t1 + 0.5]
+        if not cs:
+            return self.centro((t0 + t1) / 2, L, A)
+        xs = sorted(r["x"] + r["w"] / 2 for r in cs)
+        ys = sorted(r["y"] + r["h"] / 2 for r in cs)
+        return xs[len(xs) // 2], ys[len(ys) // 2]
+
 
 def transformar(frame, ativos, t, rostos):
     """Aplica os efeitos ativos em t no quadro (numpy RGB)."""
@@ -83,12 +96,18 @@ def transformar(frame, ativos, t, rostos):
             s *= 1.04
         elif tipo == "flash":
             flash = max(flash, ev.get("forca", 0.85) * max(0.0, 1 - tr / dur))
-        if centro is None and tipo in ("zoom", "dolly", "pulso"):
+        elif tipo == "enquadrar":
+            s *= ev.get("escala", 1.14)          # seco: já está na escala desde o 1º quadro
+        if centro is None and tipo in ("zoom", "dolly", "pulso", "enquadrar"):
             c = ev.get("centro", "rosto")
             if c == "meio":
                 centro = (L / 2, A * 0.62)
             elif isinstance(c, (list, tuple)):
                 centro = tuple(c)
+            elif tipo == "enquadrar":
+                if "_centro" not in ev:
+                    ev["_centro"] = rostos.centro_fixo(ev["inicio"], ev["fim"], L, A)
+                centro = ev["_centro"]
     if abs(s - 1) < 1e-3 and abs(tx) < 0.5 and abs(ty) < 0.5 and flash <= 0.003:
         return frame
     cx, cy = centro or rostos.centro(t, L, A)

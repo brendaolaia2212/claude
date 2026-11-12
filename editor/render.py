@@ -4,7 +4,7 @@ import re
 
 from PIL import Image
 
-from . import animacoes, sons
+from . import animacoes, sons, telacheia
 from .base import (ALTURA, FPS, LARGURA, ZONA_Y, COR_PADRAO, ffmpeg, ler_edicao, ler_json,
                    pasta, quadros, rodar, sondar)
 from .estilos import bloco_gancho
@@ -123,6 +123,13 @@ def render_parte(nome, ini, fim, saida, rapido=False):
         n_in += 1
         y_fixo.append((a, b, ALTURA / 2))
         sfx.append({"t": max(0.0, a), "tipo": "pop", "db": -17})
+
+    # tela cheia de conteúdo com ela numa moldura pequena no canto (editor/telacheia.py)
+    if ed.get("tela_cheia"):
+        atual, n_in, yf, sf = telacheia.montar(ed, ini, D, corte, rostos, tmp, entradas, filtros,
+                                               n_in, atual, rapido)
+        y_fixo += yf
+        sfx += sf
 
     # animações (gravadas antes, pra saber onde ficam e esconder a legenda se cobrirem a faixa)
     anims, bloqueios = [], []
@@ -251,6 +258,9 @@ def janelas_amostra(nome):
     tds = sorted(ed.get("tela_dividida", []), key=lambda t: t["inicio"])
     if tds and tds[0]["inicio"] > 9.0:
         js.append((max(0, tds[0]["inicio"] - 1), min(dur, tds[0]["inicio"] + 3)))
+    tcs = sorted(ed.get("tela_cheia", []), key=lambda t: t["inicio"])
+    if tcs and tcs[0]["inicio"] > 9.0:
+        js.append((max(0, tcs[0]["inicio"] - 1), min(dur, tcs[0]["fim"] + 1, tcs[0]["inicio"] + 4)))
     js.sort()
     unidas = []
     for a, b in js:

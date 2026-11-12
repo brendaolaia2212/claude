@@ -122,7 +122,8 @@ class Camada:
 def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=(), deslocar=0.0,
                   y_fixo=(), bloqueios=(), fundo=None):
     """Coloca a legenda inteira numa Camada. oculto = intervalos sem legenda;
-    y_fixo = [(ini, fim, y)] pra trechos de tela dividida (legenda na emenda das metades);
+    y_fixo = [(ini, fim, y)] pra trechos de tela dividida (legenda na emenda das metades),
+             ou [(ini, fim, y0, y1)] pra tela cheia com moldura (legenda fora da faixa y0-y1);
     bloqueios = [(ini, fim, y0, y1)] faixas ocupadas por animações."""
     estilo = nome_estilo(estilo)
     revelar = estilo == "papelaria"
@@ -136,11 +137,17 @@ def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=
         if fim - ini < 0.04:
             continue
         bloco = bloco_legenda(estilo, textos, ativa, destaque, revelar=revelar, fundo=fundo)
-        fixo = next((y for a, b, y in y_fixo if ini < b and fim > a), None)
+        fixo = next((f for f in y_fixo if ini < f[1] and fim > f[0]), None)
         ocupado = [(y0, y1) for a, b, y0, y1 in bloqueios if ini < b and fim > a]
-        y = fixo if fixo is not None else \
-            posicao_y(bloco.height, rostos.zona(ini + deslocar, fim + deslocar) if rostos else None,
-                      bloqueios=ocupado)
+        if fixo is not None and len(fixo) > 3:
+            # tela cheia com moldura no canto: altura de sempre, só fugindo da faixa da moldura
+            # (o rosto dela em tela cheia não está na tela nesse trecho)
+            y = posicao_y(bloco.height, None, bloqueios=ocupado + [tuple(fixo[2:4])])
+        elif fixo is not None:
+            y = fixo[2]
+        else:
+            y = posicao_y(bloco.height, rostos.zona(ini + deslocar, fim + deslocar) if rostos else None,
+                          bloqueios=ocupado)
         if y is None:
             continue
         x = (LARGURA - bloco.width) / 2
