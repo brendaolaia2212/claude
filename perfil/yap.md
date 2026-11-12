@@ -83,3 +83,11 @@ porque deles saem os próximos episódios. O primeiro vídeo só precisa existir
 - Temas que a história dela já sustenta (confirmar com ela antes): o corpo depois da
   bariátrica, o Cria Aí! sendo construído, Shopee e TikTok Shop, fé e prosperidade sem
   promessa fácil, recomeço.
+
+## Preferências dela na edição (aprendidas nas entregas)
+
+- **Sem desfoque de fundo.** No episódio 4 da série da mãe o vídeo saiu com fundo
+  desfocado (efeito retrato) e ela pediu pra desfazer: "ficou horrível, deixa normal sem
+  desfocar". Imagem normal, nítida, sempre; só usar desfoque se ela pedir.
+- Ela gosta de: frases fortes dela em letras grandes palavra por palavra, aproximação nas
+  mãos ao abrir pacote, poucos sons (5 ou 6, só nos momentos fortes), voz sem ruído.
