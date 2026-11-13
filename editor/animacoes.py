@@ -645,6 +645,11 @@ def renderizar(a, destaque, saida, zona_rosto=None, fundo=None):
     c = cor(a.get("cor") or destaque)
     parada = a["fim"] - a["inicio"]
     W, H, desenhar, sons = RECEITAS[tipo](a, c, parada)
+    esc = float(a.get("escala", 1.0))       # maior (ex.: lista sozinha numa tela de explicação)
+    W0, H0 = W, H
+    if esc != 1.0:
+        esc = min(esc, 1000 / W)
+        W, H = int(W * esc), int(H * esc)
     W += W % 2
     H += H % 2
     total = quadros(parada + SAIDA) if tipo != "chamada" else quadros(parada)
@@ -653,6 +658,12 @@ def renderizar(a, destaque, saida, zona_rosto=None, fundo=None):
                              "-c:v", "qtrle", "-pix_fmt", "argb", str(saida)], stdin=subprocess.PIPE)
     for q in range(total):
         img = desenhar(q / FPS)
+        if esc != 1.0:
+            if img.size != (W0, H0):
+                base = Image.new("RGBA", (W0, H0), (0, 0, 0, 0))
+                base.alpha_composite(img.crop((0, 0, min(W0, img.width), min(H0, img.height))))
+                img = base
+            img = img.resize((W, H), Image.LANCZOS)
         if img.size != (W, H):
             fundo = Image.new("RGBA", (W, H), (0, 0, 0, 0))
             fundo.alpha_composite(img.crop((0, 0, min(W, img.width), min(H, img.height))))

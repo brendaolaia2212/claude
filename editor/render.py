@@ -34,7 +34,12 @@ def _gancho(camada, ed, rostos, ini, D):
                          ed["estilo"].get("fundo"), sobre=g.get("sobre"), sub=g.get("sub"))
     topo = 260
     zona = rostos.zona(g0 + ini, g1 + ini) if rostos else None
-    if estilo == "yap" and zona and topo + bloco.height > zona[1] - 20:
+    if g.get("escala"):                       # gancho maior (rosto bem perto da câmera, texto embaixo)
+        e_ = min(float(g["escala"]), (LARGURA - 80) / bloco.width)
+        bloco = bloco.resize((int(bloco.width * e_), int(bloco.height * e_)), Image.LANCZOS)
+    if "y" in g:                              # altura escolhida (centro do bloco)
+        topo = int(min(max(g["y"] - bloco.height / 2, ZONA_Y[0]), ZONA_Y[1] - bloco.height))
+    elif estilo == "yap" and zona and topo + bloco.height > zona[1] - 20:
         # rosto alto no quadro (ela perto da câmera): o título vai pra baixo da boca
         topo = min(ZONA_Y[1] - bloco.height, zona[3] + 50)
     elif zona and topo + bloco.height > zona[1] - 20:
@@ -161,7 +166,7 @@ def render_parte(nome, ini, fim, saida, rapido=False):
         cam = Camada(tmp / "legenda")
         montar_camada(cam, palavras, est.get("legenda", "impacto"), destaque, rostos, D,
                       oculto=oculto, deslocar=ini, y_fixo=y_fixo, bloqueios=bloqueios,
-                      fundo=est.get("fundo"))
+                      fundo=est.get("fundo"), y_padrao=est.get("legenda_y"))
         entradas += ["-f", "concat", "-safe", "0", "-i", str(cam.lista(D))]
         filtros.append(f"{atual}[{n_in}:v]overlay=0:0:format=auto[vl]")
         atual, n_in = "[vl]", n_in + 1

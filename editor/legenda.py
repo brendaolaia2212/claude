@@ -148,12 +148,13 @@ def _partir(lista, y_fixo):
 
 
 def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=(), deslocar=0.0,
-                  y_fixo=(), bloqueios=(), fundo=None):
+                  y_fixo=(), bloqueios=(), fundo=None, y_padrao=None):
     """Coloca a legenda inteira numa Camada. oculto = intervalos sem legenda;
     y_fixo = [(ini, fim, y)] pra trechos de tela dividida (legenda na emenda das metades),
              ou [(ini, fim, y0, y1[, placa])] pra tela cheia com moldura (legenda fora da faixa
              y0-y1, numa placa escura translúcida, a não ser que placa seja False);
-    bloqueios = [(ini, fim, y0, y1)] faixas ocupadas por animações."""
+    bloqueios = [(ini, fim, y0, y1)] faixas ocupadas por animações;
+    y_padrao = altura preferida da legenda (estilo "legenda_y"; rosto bem perto da câmera pede mais baixo)."""
     estilo = nome_estilo(estilo)
     revelar = estilo == "papelaria"
     for ini, fim, textos, ativa in _partir(estados(palavras, estilo, fim_video), y_fixo):
@@ -180,7 +181,7 @@ def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=
             y = fixo[2]
         else:
             y = posicao_y(bloco.height, rostos.zona(ini + deslocar, fim + deslocar) if rostos else None,
-                          bloqueios=ocupado)
+                          y_padrao=y_padrao or Y_PADRAO, bloqueios=ocupado)
         if y is None:
             continue
         x = (LARGURA - bloco.width) / 2

@@ -1,0 +1,450 @@
+{
+ "correcoes": [
+  {
+   "i": 9,
+   "atual": "socias",
+   "novo": "sócias",
+   "motivo": "Falta o acento. Aparece na legenda dos primeiros segundos."
+  },
+  {
+   "i": 14,
+   "atual": "Aí!,",
+   "novo": "Aí,",
+   "motivo": "Com o 'sim,' (15) fora, a legenda ficaria 'Cria Aí!, o Banco'. Fica 'da empresa Cria Aí, o Banco de Prompts de Inteligência Artificial.'"
+  },
+  {
+   "i": 19,
+   "atual": "Promptes",
+   "novo": "Prompts",
+   "motivo": "Nome do produto (Banco de Prompts)."
+  },
+  {
+   "i": 67,
+   "atual": "vem",
+   "novo": "vêm",
+   "motivo": "Plural: 'Muitos vêm a conhecer'. O trecho 66-92 fica."
+  },
+  {
+   "i": 88,
+   "atual": "Marketplaces,",
+   "novo": "marketplaces,",
+   "motivo": "Minúscula no meio da frase."
+  },
+  {
+   "i": 92,
+   "atual": "Shop,",
+   "novo": "Shop.",
+   "motivo": "A frase termina aqui porque 93-94 ('na prática.') saem."
+  },
+  {
+   "i": 124,
+   "atual": "Promptes,",
+   "novo": "Prompts,",
+   "motivo": "Nome do produto."
+  },
+  {
+   "i": 193,
+   "atual": "que?",
+   "novo": "quê?",
+   "motivo": "'Por quê?' (pergunta retórica). A segunda escuta do trecho confirma: 'explicar, por quê? Uma coisa...'"
+  },
+  {
+   "i": 257,
+   "atual": "Promptes,",
+   "novo": "Prompts,",
+   "motivo": "Nome do produto. É a tomada que fica."
+  },
+  {
+   "i": 293,
+   "atual": "prompites",
+   "novo": "prompts",
+   "motivo": "Palavra ouvida errado."
+  },
+  {
+   "i": 298,
+   "atual": "prompites",
+   "novo": "prompts",
+   "motivo": "Palavra ouvida errado."
+  },
+  {
+   "i": 309,
+   "atual": "prompite",
+   "novo": "prompt",
+   "motivo": "Palavra ouvida errado."
+  },
+  {
+   "i": 365,
+   "atual": "prompites,",
+   "novo": "prompts,",
+   "motivo": "Palavra ouvida errado."
+  },
+  {
+   "i": 403,
+   "atual": "Promptes",
+   "novo": "Prompts",
+   "motivo": "Nome do produto."
+  },
+  {
+   "i": 516,
+   "atual": "prompites",
+   "novo": "prompts",
+   "motivo": "Palavra ouvida errado."
+  },
+  {
+   "i": 607,
+   "atual": "ao",
+   "novo": "Ao",
+   "motivo": "Vira começo de frase porque 'Elas,' (606) sai."
+  },
+  {
+   "i": 730,
+   "atual": "analisa",
+   "novo": "analisa,",
+   "motivo": "A segunda escuta separa 'analisa, aprova os melhores'."
+  },
+  {
+   "i": 731,
+   "atual": "a",
+   "novo": "aprova",
+   "motivo": "'a prova' é 'aprova' (segunda escuta, e ela repete 'aprova os melhores' em 743). Junta com 732."
+  },
+  {
+   "i": 732,
+   "atual": "prova",
+   "novo": "",
+   "motivo": "Juntado em 731. Fica vazio pra os índices não mudarem."
+  },
+  {
+   "i": 733,
+   "atual": "dos",
+   "novo": "os",
+   "motivo": "'aprova os melhores' (segunda escuta)."
+  },
+  {
+   "i": 865,
+   "atual": "sua",
+   "novo": "nossa",
+   "motivo": "A segunda escuta ouviu 'Já nossa ferramenta de Flow Motion' (sem o 'na', que o small ouviu fraco, com 0,31). A ferramenta é da empresa dela. Fica 'Já na nossa ferramenta', que é gramatical."
+  },
+  {
+   "i": 916,
+   "atual": "mais",
+   "novo": "mas",
+   "motivo": "'naquele cenário, mas no ângulo da referência' (a segunda escuta confirma)."
+  },
+  {
+   "i": 950,
+   "atual": "mesmo",
+   "novo": "a",
+   "motivo": "A segunda escuta ouviu 'ou até a mesma fala' (no mesmo jeito de 'a mesma dancinha' e 'o mesmo movimento')."
+  },
+  {
+   "i": 951,
+   "atual": "a",
+   "novo": "mesma",
+   "motivo": "Continuação de 950: 'ou até a mesma fala'."
+  },
+  {
+   "i": 1006,
+   "atual": "CRI",
+   "novo": "Cria",
+   "motivo": "Nome da marca."
+  },
+  {
+   "i": 1007,
+   "atual": "aí",
+   "novo": "Aí",
+   "motivo": "Nome da marca (Cria Aí)."
+  },
+  {
+   "i": 1011,
+   "atual": "manualmente",
+   "novo": "manualmente,",
+   "motivo": "Pontuação: 'trabalhar manualmente, você fazendo, com as ferramentas...' (1012-1013 ficam)."
+  },
+  {
+   "i": 1037,
+   "atual": "gerar,",
+   "novo": "gerar",
+   "motivo": "Pontuação: 'às vezes a gente quer gerar na ferramenta,'."
+  },
+  {
+   "i": 1039,
+   "atual": "ferramenta",
+   "novo": "ferramenta,",
+   "motivo": "Pontuação, na mesma frase."
+  },
+  {
+   "i": 1184,
+   "atual": "Criaí",
+   "novo": "Cria Aí",
+   "motivo": "Nome da marca."
+  },
+  {
+   "i": 1195,
+   "atual": "prompt",
+   "novo": "prompts",
+   "motivo": "'o nosso banco de prompts' (nome do produto)."
+  }
+ ],
+ "tirar": [
+  {
+   "de": 15,
+   "ate": 15,
+   "texto": "sim,",
+   "motivo": "Palavra solta: 'Sim,', que a segunda escuta do trecho também ouve (13,50-14,44), entre 'Cria Aí!' e uma pausa de 3 s. Não acrescenta nada. Fica 'da empresa Cria Aí, o Banco de Prompts de Inteligência Artificial.' A emenda é limpa: o som de 'Aí' acaba em 13,67."
+  },
+  {
+   "de": 93,
+   "ate": 94,
+   "texto": "na prática.",
+   "motivo": "Fragmento solto entre duas pausas: 3,5 s depois de 'TikTok Shop' vem 'na prática' (98,3-99,1 pela segunda escuta) e depois mais 7 s antes de 'Mas nós temos uma esteira...'. Pouca informação. A frase fecha em 'TikTok Shop.'. A emenda depois de 'Shop' não tem silêncio e cai na queda de volume em ~94,38 (fala emendada): ouvir."
+  },
+  {
+   "de": 220,
+   "ate": 250,
+   "texto": "o Cria Aí, o nosso Banco de Prompts, ele é o nosso caderno de receita, onde tem, vamos supor várias receitas ali dentro, ele é o nosso caderno de receitas. O",
+   "motivo": "1ª e 2ª tomada de 'caderno de receitas'. Fica a última e mais limpa (251-284), que já emenda nos 700 cards. 'Ou seja,' (218-219) fica e liga a metáfora ao produto: 'Ou seja, Cria Aí, o nosso Banco de Prompts, é o caderno de receitas'. O 250 'O' sai junto: o tempo dele (175,96-176,96) é o fim de 'receitas' da 2ª tomada mais silêncio, e a segunda escuta começa a 3ª tomada direto em 'Cria'. Emendas limpas: o som de 'seja,' acaba em ~164,19, e antes de 'Cria' (179,16) há silêncio. Os dois estalinhos em 176,5 e 178,5 ficam de fora."
+  },
+  {
+   "de": 533,
+   "ate": 543,
+   "texto": "Você paga uma única vez e você recebe prompts eternamente aí.",
+   "motivo": "Repete o que ela acabou de dizer: 'E você paga uma única vez' (503-508), 'vitalício' (514) e 'não paga nada a mais por essas atualizações' (523-532). O bloco termina em 'atualizações.' e entra 'Já as ferramentas são um equipamento.' Entre 'atualizações' e 'Você' não há silêncio (fala emendada): o corte cai em ~291,75, entre o fim de 'atualizações' (~291,68) e o começo de 'Você' (~291,80). Ouvir essa emenda."
+  },
+  {
+   "de": 606,
+   "ate": 606,
+   "texto": "Elas,",
+   "motivo": "Começo abandonado, com pausa dos dois lados (o som acaba em 326,67 e o 'ao' começa em 327,55). Ela recomeça em 'Ao adquirir as ferramentas'."
+  },
+  {
+   "de": 857,
+   "ate": 858,
+   "texto": "por exemplo,",
+   "motivo": "Muleta, sem exemplo nenhum depois. Fica '...videozinhos de movimento, tudo de maneira automática.' Antes de 'por' só há uma queda curta em 444,25 (fala emendada, ouvir). Depois de 'exemplo' há 0,15 s de silêncio (445,18-445,30). Depende de refazer o tempo de 859 'tudo' (ver notas), senão a emenda leva a cauda de 'exemplo'."
+  },
+  {
+   "de": 1269,
+   "ate": 1329,
+   "texto": "Se você quer adquirir o Cria Aí ou uma das nossas ferramentas ou até mesmo todo o combo completo, o link está sempre aqui na minha bio. E se você ficou com alguma dúvida sobre qual faz mais sentido para você o que faz o que, comenta eu quero aqui que eu te chamo no Direct e te explico tudinho com calma.",
+   "motivo": "O fim de venda que ela pediu pra tirar (link na bio e 'comenta eu quero'). O vídeo termina em 'Um sempre complementa o outro.' (1268, original 655,01 s), sem cartão. Emenda limpa: o som acaba em 655,07."
+  }
+ ],
+ "gancho": {
+  "texto": "Antes de trabalhar com IA,\neu era cozinheira",
+  "por_que": "É a fala dela (24-32), só com 'inteligência artificial' abreviado pra IA, sem mudar o sentido: 7 palavras em 2 linhas. É uma descoberta pessoal verdadeira e uma contradição (a sócia de uma empresa de IA era cozinheira), o que prende quem é de tecnologia. Ela mesma paga o gancho em ~0:07,5-0:11,8 e já abre a metáfora caderno × equipamento, que é o vídeo inteiro. Descartei 'Antes da IA' porque muda o sentido (antes de a IA existir) e 'Caderno de receitas ou máquina de fazer pão?' porque junta duas frases distantes numa pergunta que ela não fez."
+ },
+ "telas": [
+  {
+   "de": 565,
+   "ate": 572,
+   "assunto": "ferramenta_massa",
+   "o_que_mostrar": "letreiro_ferramenta_massa_curta_b_anim.mp4 numa entrada só: 1,6 s de entrada com brilho, depois o overlay segura o último quadro (o letreiro inteiro) até o fim. Texto: 'FERRAMENTA · dentro do Google Flow · imagens e vídeos em massa'. Versão curta, sem 'acesso vitalício'. Sem a 2ª entrada com o png, que faria a moldura pular de novo. Ela na moldura pequena (0,30) em cima à direita. ~3,3 s (no corte, ~3:07,4-3:10,7).",
+   "por_que": "Ela diz exatamente 'Já as nossas ferramentas dentro do Google Flow', que é o texto do letreiro. Abre o bloco das ferramentas e deixa 29 s de folga até a tela do POV."
+  },
+  {
+   "de": 655,
+   "ate": 673,
+   "assunto": "pov",
+   "o_que_mostrar": "Duas entradas seguidas: (1) letreiro_pov_studio_anim.mp4 (1,6 s) junto com 'POV Studio'; (2) corte seco (entrada 'corte') pro site_pov_studio.mp4 desde 0 s: 'Quem assiste não vê um anúncio. Vê as próprias mãos.' Ela na moldura do canto. ~6,2 s (~3:39,9-3:46,2). Volta pra ela em tela cheia em 'você só precisa colocar a foto do produto'. Conferir na amostra o pop da moldura na troca letreiro → site.",
+   "por_que": "Ela diz o nome e explica a ferramenta: 'imagens e vídeos em massa de POV somente aparecendo as mãos'. O site mostra a mesma ideia das mãos."
+  },
+  {
+   "de": 727,
+   "ate": 740,
+   "assunto": "ferramenta_massa",
+   "o_que_mostrar": "site_lote_passos.mp4 inteiro desde 0 s (4,3 s): 'Da foto ao vídeo, em três passos' (envie as fotos · aprove o que ficou bom · transforme em vídeos) e 'Uma imagem aprovada, vários vídeos: GANCHO, DEMONSTRAÇÃO'. Ela na moldura do canto. ~4,3 s (~4:04,1-4:08,4).",
+   "por_que": "'Depois você só analisa, aprova os melhores e aí já coloca para gerar' é o mesmo passo a passo da tela, que ainda mostra o gancho e a demonstração que ela acabou de citar."
+  },
+  {
+   "de": 784,
+   "ate": 805,
+   "assunto": "ugc",
+   "o_que_mostrar": "Duas entradas seguidas: (1) letreiro_ugc_studio_anim.mp4 (1,6 s) junto com 'UGC Studio'; (2) corte seco pro site_ugc_studio.mp4 desde 0 s: 'Alguém apresenta o seu produto. E não precisa ser você.', as etiquetas (veste a peça · segura no cabide · aplica o produto · gira · aponta o detalhe), os blocos de campanha e, no fim, 'A influenciadora pode ser criada por IA, uma parceira... ou você mesma'. Ela na moldura do canto. ~7,85 s (~4:26,0-4:33,9). Depende de refazer os tempos de 783-786 (ver notas).",
+   "por_que": "Ela diz o nome e o que entra ('a foto da sua influenciadora ou do seu influenciador e peças de roupa ou produtos'). O fim do clipe, com 'a influenciadora pode ser...', cai enquanto ela fala da influenciadora e das peças. A tela sai em 'Ela vai aparecer vestindo,'."
+  },
+  {
+   "de": 866,
+   "ate": 886,
+   "assunto": "motion",
+   "o_que_mostrar": "site_motion.mp4 desde 0 s (6,7 s, parado no último quadro por ~1,1 s): 'FLOW MOTION · O movimento vem de outro vídeo. A influenciadora é a sua.', o letreiro FLOW MOTION do site, os 3 passos e, no fim, o vídeo de referência ao lado do vídeo gerado. Ela na moldura do canto. ~7,8 s (~4:57,4-5:05,3). Sem o letreiro MOTION CONTROL.",
+   "por_que": "Ela diz 'ferramenta de Flow Motion', o mesmo nome escrito no site, e descreve 'você manda a foto da sua influenciadora, você manda o vídeo de referência que você quer clonar'. A referência ao lado do gerado já está inteira por volta de 5 s do clipe, e ela diz 'o vídeo de referência' em ~5,4 s."
+  }
+ ],
+ "palavras_grandes": [
+  {
+   "de": 55,
+   "ate": 64,
+   "texto": "a diferença entre o Cria Aí e as nossas ferramentas",
+   "destaque": [
+    59,
+    60,
+    64
+   ],
+   "por_que": "Diz o assunto do vídeo aos ~0:19, logo depois que ela paga o gancho. Quem é de tecnologia sabe na hora do que se trata."
+  },
+  {
+   "de": 106,
+   "ate": 114,
+   "texto": "muita gente não entende o que é o que",
+   "destaque": [
+    108,
+    109
+   ],
+   "por_que": "A dúvida do público (~0:37). Quem confunde os produtos se reconhece."
+  },
+  {
+   "de": 199,
+   "ate": 208,
+   "texto": "caderno de receitas testadas, outra é ter um equipamento profissional,",
+   "destaque": [
+    199,
+    207
+   ],
+   "por_que": "A metáfora central num bloco só (~1:08), com caderno e equipamento em destaque. As palavras entram uma por uma no tempo da fala e montam o contraste, sem duas frases grandes coladas."
+  },
+  {
+   "de": 368,
+   "ate": 371,
+   "texto": "também não gera sozinho.",
+   "destaque": [
+    371
+   ],
+   "por_que": "Verdade honesta sobre o produto (~2:05): o banco não é gerador. Entra 3,2 s depois que o passo a passo sai, sem encavalar."
+  },
+  {
+   "de": 545,
+   "ate": 549,
+   "texto": "as ferramentas são um equipamento.",
+   "destaque": [
+    549
+   ],
+   "por_que": "Virada do vídeo, do caderno pro equipamento (~3:00). Conferir o 548 'um' ouvindo (só o small ouve). Se não existir, 548 fica '' e o texto vira 'as ferramentas são equipamento.'"
+  },
+  {
+   "de": 598,
+   "ate": 602,
+   "texto": "ela faz o pão sozinho",
+   "destaque": [
+    602
+   ],
+   "por_que": "Fecha a metáfora das ferramentas e responde ao 'não gera sozinho' do Cria Aí (~3:18). Fica 7,6 s depois da tela FERRAMENTA e 20 s antes da tela do POV."
+  },
+  {
+   "de": 966,
+   "ate": 969,
+   "texto": "você clona um vídeo",
+   "destaque": [
+    967
+   ],
+   "por_que": "O resumo dela do Flow Motion em 4 palavras (~5:36), 30 s depois da tela do motion."
+  },
+  {
+   "de": 1114,
+   "ate": 1117,
+   "texto": "rodam em conta gratuita",
+   "destaque": [
+    1117
+   ],
+   "por_que": "Dado prático que pesa pra quem é de tecnologia (~6:34): roda no Google Flow sem plano pago. Quebra 30 s de fala sem nada na tela."
+  },
+  {
+   "de": 1188,
+   "ate": 1190,
+   "texto": "o comando certo,",
+   "destaque": [
+    1189,
+    1190
+   ],
+   "por_que": "O que o Cria Aí entrega, nas palavras dela (~7:02): banco de prompts e não gerador."
+  },
+  {
+   "de": 1253,
+   "ate": 1263,
+   "texto": "nenhuma cozinha séria aposenta o caderno quando chega um equipamento novo.",
+   "destaque": [
+    1258,
+    1262
+   ],
+   "por_que": "Fecha a metáfora com caderno e equipamento em destaque, espelhando o bloco de 1:08 (~7:27). Logo depois, 'Um sempre complementa o outro.' fecha o vídeo só na legenda, sem cartão."
+  }
+ ],
+ "animacoes": [
+  {
+   "tipo": "numero",
+   "de": 266,
+   "ate": 274,
+   "conteudo": "valor \"+700\", rótulo \"cards de imagem e vídeos\" (palavras 269-273, seguidas; com 'testados' o rótulo fica com 1077 px e não cabe). Entra em 266 ('mais') e o número fecha em 700 junto com 268 ('700'). Sai depois de 'testados' (274).",
+   "por_que": "Ela falou o número (~1:23). Deixa concreto o tamanho do 'caderno de receitas'."
+  },
+  {
+   "tipo": "lista",
+   "de": 285,
+   "ate": 302,
+   "conteudo": "tema escuro, título \"Separados por nicho\" (286-288). Itens (no máximo 4, então juntei pares com as palavras dela): \"Roupa, mobiliário\" (t no 289), \"POV, UGC\" (t no 291), \"Para gerar em elementos\" (t no 297), \"Para gerar em frames\" (t no 302). Segura ~0,8 s depois de 302, em cima do começo de 303 (ali não tem mais nada).",
+   "por_que": "Ela enumera seis categorias muito rápido (~1:34). A lista com check ajuda a acompanhar."
+  },
+  {
+   "tipo": "passo",
+   "de": 343,
+   "ate": 360,
+   "conteudo": "passos: \"Copia no Cria Aí!\" (t no 344), \"Cola no Flow\" (t no 348), \"Gerar\" (t no 356). Todas as pílulas cabem na zona segura (a maior tem 768 px).",
+   "por_que": "O fluxo manual do banco na voz dela (~1:56). É o contraste com as ferramentas automáticas."
+  },
+  {
+   "tipo": "numero",
+   "de": 435,
+   "ate": 441,
+   "conteudo": "valor \"+20\", rótulo \"aulas de apoio\" (expressão dela em 414-416, e a que a marca exige; nunca 'curso'). Entra em 435 ('mais'), fecha em 20 junto com 437 e sai em 441.",
+   "por_que": "Número que ela falou (~2:25). Tirei a frase grande 'A gente não é um curso' (423-428) pra não encavalar."
+  },
+  {
+   "tipo": "lista",
+   "de": 453,
+   "ate": 484,
+   "conteudo": "tema escuro, título \"Minerador de produtos da Shopee\" (453-457). Itens: \"Os produtos mais vendidos\" (t no 460), \"As comissões mais altas\" (t no 464), \"Quanto cada anúncio paga de comissão\" (t no 468), \"Quanto vendeu nos últimos 30 dias\" (t no 478). Sai depois de 'dias' (484). Sem valor em dinheiro. O 30 é dado do minerador, dito por ela.",
+   "por_que": "São quatro dados seguidos (~2:31-2:43). A lista organiza e quebra uma fala longa."
+  },
+  {
+   "tipo": "lista",
+   "de": 995,
+   "ate": 1025,
+   "conteudo": "tema escuro, título \"quem faz o trabalho pesado\" (999-1003, cabe no cartão). Itens: \"Cria Aí!: manualmente\" (t no 1011), \"Ferramentas: de maneira automática\" (t no 1024). Sai em 1025.",
+   "por_que": "A diferença central do vídeo comparada nas palavras dela (~5:47-6:01). Fica no lugar da frase grande 'quem faz o trabalho pesado', que ficaria colada na lista, e da frase 'um não anula o outro', que entraria 0,5 s depois."
+  }
+ ],
+ "sons": [
+  {
+   "indice": 32,
+   "tipo": "impacto_seco",
+   "por_que": "Bate em 'cozinheira' (~0:11), quando ela paga o gancho. Ali não tem texto grande de propósito."
+  },
+  {
+   "indice": 565,
+   "tipo": "whoosh",
+   "por_que": "Entrada do letreiro FERRAMENTA, que abre o bloco das ferramentas (~3:07)."
+  },
+  {
+   "indice": 655,
+   "tipo": "whoosh",
+   "por_que": "Entrada da tela do POV Studio (~3:40). O mesmo som em toda ferramenta, pra quem assiste associar som e ferramenta."
+  },
+  {
+   "indice": 784,
+   "tipo": "whoosh",
+   "por_que": "Entrada da tela do UGC Studio (~4:26; depende de refazer os tempos de 783-786)."
+  },
+  {
+   "indice": 866,
+   "tipo": "whoosh",
+   "por_que": "Entrada da tela do Flow Motion (~4:57)."
+  },
+  {
+   "indice": 1258,
+   "tipo": "impacto_seco",
+   "por_que": "Peso em 'caderno' (~7:29), dentro da frase final da metáfora. Faz par com o som de 'cozinheira' no começo. É o último som do vídeo."
+  }
+ ],
+ "notas": "Corte estimado: ~7:33 (453,5 s, de 11:20). Simulei o planejar com o código do próprio editor (bordas pela energia), com estes cortes e os tempos refeitos abaixo. Termina em 1268 'Um sempre complementa o outro.' (original 655,01 s), sem cartão. Os tempos no corte (~) saem dessa simulação. Depois do montar, confira com 'texto' antes de escrever o edicao.json.\n\nFAZER ANTES DO PLANEJAR (tempos na transcricao.json, sem apagar entradas)\n1) TOMADA ESCONDIDA NO UGC (confirmada pela energia e pela segunda escuta do trecho, que ouve 'No UGC estúdio entram a foto do ensino em...' em 409,2-412,8, abandonada): a 2ª tentativa começa em 414,00. O small juntou as duas em 783-786 ('entra' vai de 410,79 a 414,89). Refaça: 783 No 413,97-414,24 · 784 UGC 414,24-414,56 · 785 Studio 414,56-415,05 · 786 entra 415,05-415,37. Assim 408,2-412,8 sai. Se não der, tire com 'tirar' depois do montar. A tela do UGC (784) e o som 4 dependem disso.\n2) 1249 'E': refaça o tempo pra 646,78-646,83 (o 'E' real, colado em 'sendo', pela energia) e MANTENHA a palavra. Não use tirar no 1249 nem 'E sendo' no 1250: o começo errado do 1249 (636,72) limita o fim de 'dia.' (1248), e o som de 'dia' vai até 636,88. Simulado com o tempo novo, 'dia.' fecha em 636,93 inteiro.\n3) 859 'tudo': comece em 445,30 (o som começa em 445,33). Com 445,13 a emenda do 'por exemplo' leva a cauda de 'exemplo'.\n4) Opcional: 93 'na' começando em 94,40 (sai de qualquer jeito). A emenda depois de 'Shop' fica em 94,39, mais perto da queda de volume.\n5) Ponha \"sons_so_extras\": true no edicao.json. Sem isso, as listas, o passo, os números e cada tela somam pops e swishes próprios e passam de 6.\n6) manter_palavras [[218,219]] não é necessário (simulado, o planejar não tira nenhuma frase nem muleta sozinho), mas pode ficar como seguro.\n7) Opcional: em 44 ela gagueja 'que... que' (29,26-29,36, pausa, 29,62-29,80). Só mexer se aparecer no corte.\n\nEMENDAS PRA OUVIR DEPOIS DO MONTAR (fala emendada, o planejar vai listar)\n- depois de 'TikTok Shop.' (original ~94,4; corte ~0:33,9)\n- depois de 'atualizações.' (original ~291,75; corte ~2:59,1)\n- depois de 'movimento,' (original ~444,25; corte ~4:54,8)\n\nDECISÕES DE CORTE (o que ficou de fora das propostas e por quê)\n- 66-92 (lives, 'ensinando vocês a faturar com inteligência artificial... Shopee, TikTok Shop') FICA: é informação, e a conferência da Meta não pega 'faturar' sem número. Mas é o 1º candidato se ela quiser abrir mais rápido (~10,6 s, em ~0:23-0:33) e tira a única fala de ganho do vídeo (a marca não promete 'faturar'). Perguntar a ela. Fica só na fala, nunca na tela.\n- 774 'Enfim,' FICA: entre 'Enfim' e 'você' a queda de volume dura só 0,04 s, a -34 dB, e a emenda comeria o '-fim'.\n- 1012-1013 'você fazendo,' FICA: está no meio da frase e não tem silêncio depois de 'manualmente' (a emenda ficaria a -30 dB).\n- 1078-1111 (~12,7 s, 3ª vez de pagamento único/vitalício) e 1129-1173 (~15,6 s, videoaula iPhone/Android) ficam. São os candidatos se ela quiser o vídeo mais curto ou menos 'venda'. Neles e em 1052-1077 não vai texto na tela.\n- Repetições de propósito (anáfora, ficam): 756-773 'dá para você personalizar' ×2, 811-841 'pode ser' ×4, 1144-1157 'a mexer' ×3. 741-755 não repete 727-740: é a 2ª etapa (aprovar vídeos e postar).\n- 410 'só' fica ('não leva só receita, leva aulas de apoio'), mesmo com a segunda escuta ouvindo 'a sua' (que não faz sentido ali).\n- 296/301 'em' ficam ('gerar em elementos', 'gerar em frames'): o small ouve com confiança e o 'gerar' do medium dura 0,7 s, o que indica o 'em' colado.\n- Palavras com tempo esticado dentro de silêncio que FICAM (1026 'E', 1118 'e', 1129 'E', 1174 'Na'): as bordas pela energia já dividem o silêncio, não precisa mexer.\n\nTELAS (5, ~29 s no total; ela em tela cheia no resto, como pediu)\n- Começos no corte: ~3:07, 3:40, 4:04, 4:26, 4:57 (sempre mais de 17 s entre uma e outra, cada uma com 3,3 a 7,9 s). Só onde ela fala de ferramenta. No Cria Aí ela fica em tela cheia (com o 700 e as listas).\n- Letreiro + site = duas entradas seguidas em tela_cheia, a 2ª com \"entrada\": \"corte\". Cada entrada refaz o pop da moldura (0,85→1): conferir na amostra se a troca fica bonita. Clipe mais curto que o trecho fica parado no último quadro (por isso a tela FERRAMENTA é uma entrada só, com o _anim.mp4).\n- Letreiro FERRAMENTA: só a versão curta_b, porque 'acesso vitalício' só aparece na fala em 1074-1077.\n- Sem o letreiro MOTION CONTROL: ela nunca diz esse nome, e o site já mostra 'FLOW MOTION', que é o que ela fala.\n- Não usar: banner_viralizados, banner_30_minutos, faceless, 'maior banco de prompts', site_criaai_pra_quem e os recortes deles (frases que ela não disse, ou promessa proibida pela marca).\n- Reserva, se ela pedir mais tela: site_motion a partir de ~4,5 s (referência × gerado, parado) em 945-958 ('a mesma dancinha... o mesmo movimento'). Ficou de fora porque repete o fim da tela do Flow Motion e encostaria na frase grande 'você clona um vídeo'. Outra reserva: site_studios_topo em 623-641.\n- Moldura: 0,30 em cima à direita nos letreiros, que ocupam o meio. Nos sites o título fica no alto: conferir na folha de quadros se a moldura tapa o título; se tapar, usar baixo-dir.\n\nTEXTO NA TELA\n- 10 frases grandes + 6 animações, nunca uma em cima da outra nem coladas numa tela. A menor distância é de 3,2 s (o passo sai em ~2:01,5 e 'também não gera sozinho' entra em ~2:04,8). As duas frases-espelho (1:08 caderno/equipamento e 7:27 caderno/equipamento) amarram o começo e o fim.\n- Saíram pra respeitar o espaçamento: 'Quem decide cada coisa... é você' (4 s depois de 'não gera sozinho'), 'A gente não é um curso' (colada no +20), 'máquina de fazer pão' (logo depois da tela FERRAMENTA), 'quem faz o trabalho pesado' e 'um não anula o outro' (viraram o título da lista ou ficariam colados nela), 'Um sempre complementa o outro' (2,2 s depois da frase da cozinha; fica só na legenda).\n- Os 'destaque' estão em índices da transcricao.json. Na hora de escrever a frase, converter pra posição da palavra dentro da frase e usar a cor de destaque da marca (#FF6A00).\n- Gancho: estilo Manchete ou Vidro escuro na paleta da marca (cor #FF6A00, fundo #0D2B3E), com a 2ª linha em laranja. Sem 'sub' (em Manchete e Vidro ele não aparece; o assunto entra como frase grande em ~0:19). Alternativas, se ela não gostar: 'Caderno de receitas ou equipamento profissional?' (199-208, direto no assunto) e 'Nenhuma cozinha séria aposenta o caderno' (1253-1258, elegante, mas é o fecho).\n- Meta e produto: nada de dinheiro, prazo ou promessa na tela. O 30 só aparece dentro da lista do minerador. Os números na tela (700, 20, 30) foram ditos por ela. O Cria Aí aparece como banco de prompts (copia, cola, gera no Flow), nunca como gerador. Rodar 'meta' no final assim mesmo.\n\nPEDIDO DELA, FORA DESTE PLANO: trilha baixinha (abaixo_db ~24) e troca de enquadramento a cada frase."
+}
