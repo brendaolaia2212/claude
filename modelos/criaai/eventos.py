@@ -48,33 +48,37 @@ ed.pop("chamada", None)          # sem chamada de venda no fim
 
 # ---------------- gancho ----------------
 g = plano["gancho"]
-ed["gancho"] = {"texto": g["texto"], "inicio": 0.0, "fim": 3.4, "y": 1450, "escala": 1.3}
-ed["estilo"].update({"gancho": "manchete", "legenda_y": 1520})
+ed["gancho"] = {"texto": g["texto"], "inicio": 0.0, "fim": 3.4, "y": 1450, "escala": 1.15}
+ed["estilo"].update({"gancho": "manchete", "legenda_y": 1520, "legenda_ate": 1680, "legenda_sem_topo": True})
 ocupado = [(0.0, 3.4)]
 
 # ---------------- telas cheias (ela na moldura do canto) ----------------
 TC = []
 
 
-def tela(arquivo, t0, t1, canto, entrada="desliza", moldura=0.30):
-    TC.append({"video": str(T / arquivo), "de": 0.0, "inicio": round(t0, 3), "fim": round(t1, 3), "canto": canto,
-               "moldura": moldura, "entrada": entrada})
+def preso(t, folga=0.35):
+    e_ = min(emendas, key=lambda e: abs(e - t))
+    return e_ if abs(e_ - t) <= folga else t
+
+
+def tela(arquivo, t0, t1, canto, entrada="desliza", moldura=0.28, **k):
+    TC.append(dict({"video": str(T / arquivo), "de": 0.0, "inicio": round(t0, 3), "fim": round(t1, 3), "canto": canto,
+                    "moldura": moldura, "entrada": entrada}, **k))
 
 
 for tl in plano["telas"]:
     ids = mantidas(tl["de"], tl["ate"])
-    t0, t1 = ini(ids[0], 0.1), fim(ids[-1], 0.2)
-    e_ = next((e for e in emendas if e > t0 + 0.3), None)
+    t0, t1 = ini(ids[0], 0.1), preso(fim(ids[-1], 0.2))
     if tl["assunto"] == "ferramenta_massa" and tl["de"] == 565:
-        tela("letreiro_ferramenta_massa_curta_b_anim.mp4", t0, t1, "cima-dir")
-    elif tl["assunto"] == "pov":
-        tela("letreiro_pov_studio_anim.mp4", t0, t0 + 1.7, "cima-dir")
-        tela("site_pov_studio.mp4", t0 + 1.7, t1, "baixo-dir", entrada="corte")
-    elif tl["assunto"] == "ugc":
-        tela("letreiro_ugc_studio_anim.mp4", t0, t0 + 1.7, "cima-dir")
-        tela("site_ugc_studio.mp4", t0 + 1.7, t1, "baixo-dir", entrada="corte")
+        tela("letreiro_ferramenta_massa_curta_b_anim.mp4", t0, t1, "cima-dir", legenda_y=1450)
+    elif tl["assunto"] in ("pov", "ugc"):
+        nome = {"pov": "pov_studio", "ugc": "ugc_studio"}[tl["assunto"]]
+        tela(f"letreiro_{nome}_anim.mp4", t0, t0 + 1.7, "baixo-dir", moldura=0.22, legenda=False)
+        tela(f"site_{nome}.mp4", t0 + 1.7, t1, "baixo-dir", entrada="corte", moldura=0.22)
     elif tl["assunto"] == "motion":
-        tela("site_motion.mp4", t0, t1, "baixo-dir")
+        corte_ = round(t0 + 4.68, 3)       # a comparação referência x resultado fica livre da moldura
+        tela("site_motion.mp4", t0, corte_, "baixo-dir")
+        tela("site_motion.mp4", corte_, t1, "cima-dir", entrada="corte", de=4.68, legenda_y=1640)
     else:
         tela("site_lote_passos.mp4", t0, t1, "baixo-dir")
     ocupado.append((t0, t1))
@@ -99,15 +103,16 @@ AN = [
      "itens": [("Os produtos mais vendidos", 460), ("As comissões mais altas", 464),
                ("Quanto cada anúncio paga de comissão", 468), ("Quanto vendeu nos últimos 30 dias", 478)]},
     {"tipo": "lista", "tema": "escuro", "titulo": "Quem faz o trabalho pesado", "de": 995, "ate": 1025,
-     "itens": [("Cria Aí!: manualmente", 1011), ("Ferramentas: de maneira automática", 1024)]},
+     "itens": [("Cria Aí! · manualmente", 1011), ("Ferramentas · de maneira automática", 1024)]},
 ]
 for an in AN:
     ids = mantidas(an["de"], an["ate"])
-    t0, t1 = ini(ids[0], 0.1), fim(ids[-1], an.get("depois", 0.5))
+    t0, t1 = ini(ids[0], 0.1), preso(fim(ids[-1], an.get("depois", 0.5)))
     if not ok(t0, t1, an["tipo"]):
         continue
-    x = {"tipo": an["tipo"], "inicio": t0, "fim": t1, "y": 1250 if an["tipo"] == "lista" else 1200,
-         "escala": {"lista": 1.8, "numero": 1.5, "passo": 1.6}[an["tipo"]]}
+    x = {"tipo": an["tipo"], "inicio": round(t0 + (0.25 if an["tipo"] == "passo" else 0.0), 3), "fim": round(t1 - 0.2, 3),
+         "y": 1250 if an["tipo"] == "lista" else 1200,
+         "escala": {"lista": 1.8, "numero": 1.5, "passo": 2.0}[an["tipo"]]}
     # explicação: fundo azul da marca, ela na moldura do canto (o rosto dela fica livre)
     TC.append({"imagem": str(T / "fundo_explicacao.png"), "inicio": round(t0 - 0.05, 3), "fim": round(t1, 3),
                "canto": "cima-dir", "moldura": 0.32, "entrada": "desliza"})
@@ -131,9 +136,14 @@ for f in sorted(plano["palavras_grandes"], key=lambda f: f["de"]):
     if not ok(t0, t1, f["texto"]):
         continue
     pal = [{"w": ws[i]["w"].strip(), "t": round(max(0.0, para(ws[i]["s"], "inicio") - t0), 3)} for i in ids]
+    for k_ in range(1, len(pal)):
+        if pal[k_]["w"].strip(",.") == "Aí" and pal[k_ - 1]["w"] == "Cria":
+            pal[k_]["w"] = "Aí!" + pal[k_]["w"][2:].lstrip("!")
+    pal[-1]["w"] = pal[-1]["w"].rstrip(",")
     dest = [k for k, i in enumerate(ids) if i in set(f.get("destaque", []))]
     A.append({"tipo": "frase", "palavras": pal, "destaques": dest, "inicio": t0, "fim": t1, "som": None,
-              "fonte": "archivo", "fonte_destaque": "archivo", "cor_destaque": "#FF6A00", "tam": 96, "y": 1490})
+              "fonte": "archivo", "fonte_destaque": "archivo", "cor_destaque": "#FF6A00",
+              "tam": 86 if len(pal) > 9 else 96, "y": 1480})
 
 # ---------------- troca de enquadramento a cada frase ----------------
 frases_fala, atual = [], []
@@ -147,19 +157,33 @@ for k, i in enumerate(ordem):
         atual = []
 if atual:
     frases_fala.append(atual)
-CICLO = [1.0, 1.13, 1.0, 1.07]
-blocos, b0 = [], None
-for fr in frases_fala:
-    t0 = ini(fr[0], 0.06)
-    if blocos and t0 - blocos[-1][0] < 1.6:       # frase curtinha: fica no mesmo enquadramento
+CICLO = [1.0, 1.14, 1.0, 1.22]
+telas_lim = sorted({round(x, 3) for t_ in TC for x in (t_["inicio"], t_["fim"])})
+pontos = [(e, 3) for e in emendas[1:-1]] + [(ini(fr[0], 0.06), 1) for fr in frases_fala] + [(x, 2) for x in telas_lim]
+# trechos longos: divide numa pausa/vírgula perto do meio
+pontos.sort()
+bordas = []
+for t, pri in pontos:                     # perto demais: fica a de maior prioridade (emenda > tela > frase)
+    if bordas and t - bordas[-1][0] < 1.0:
+        if pri > bordas[-1][1]:
+            bordas[-1] = (t, pri)
         continue
-    blocos.append([t0])
-for k, b in enumerate(blocos):
-    t0 = b[0]
-    t1 = blocos[k + 1][0] if k + 1 < len(blocos) else D
+    bordas.append((t, pri))
+cortes = [0.0] + [b for b, _ in bordas if 0.5 < b < D - 0.5] + [D]
+extra = []
+for a_, b_ in zip(cortes, cortes[1:]):
+    if b_ - a_ > 7.0:
+        cand = [para(ws[i]["e"], "fim") for i in ordem
+                if a_ + 2.5 < para(ws[i]["e"], "fim") < b_ - 2.5 and ws[i]["w"].strip()[-1:] in ",;:"]
+        if cand:
+            extra.append(min(cand, key=lambda t: abs(t - (a_ + b_) / 2)) + 0.04)
+cortes = sorted(cortes + extra)
+for k, (a_, b_) in enumerate(zip(cortes, cortes[1:])):
     esc = CICLO[k % len(CICLO)]
     if esc > 1.0:
-        FX.append({"tipo": "enquadrar", "inicio": round(t0, 3), "fim": round(t1, 3), "escala": esc})
+        a2 = a_ - 0.001 if any(abs(a_ - e) < 1e-3 for e in emendas) else a_
+        b2 = b_ - 0.001 if any(abs(b_ - e) < 1e-3 for e in emendas) else b_
+        FX.append({"tipo": "enquadrar", "inicio": round(a2, 4), "fim": round(b2, 4), "escala": esc})
 
 # ---------------- só 6 sons ----------------
 for s_ in plano["sons"]:
@@ -168,12 +192,12 @@ for s_ in plano["sons"]:
         i = next((j for j in range(i, i + 10) if j in manter), None)
         if i is None:
             continue
-    antes = 0.15 if s_["tipo"].startswith("whoosh") else 0.0
+    antes = 0.45 if s_["tipo"].startswith("whoosh") else 0.0
     SX.append({"t": ini(i, antes), "tipo": s_["tipo"], "db": -22 if s_["tipo"].startswith("whoosh") else -20, "junto": True})
 ed["sons_so_extras"] = True
 
 # ---------------- trilha baixinha ----------------
-ed["trilha"] = {"arquivo": "/home/user/claude/recursos/trilhas/tech_suave.wav", "abaixo_db": 24}
+ed["trilha"] = {"arquivo": "/home/user/claude/recursos/trilhas/tech_suave.wav", "abaixo_db": 16}
 
 ed["tela_cheia"] = sorted(TC, key=lambda t: t["inicio"])
 A.sort(key=lambda a: a["inicio"])

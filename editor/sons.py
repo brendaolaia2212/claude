@@ -4,7 +4,7 @@ from .base import RECURSOS, ffmpeg
 PASTA = RECURSOS / "sons"
 
 RECEITAS = {
-    "whoosh": ("anoisesrc=color=pink:d=0.55:a=0.9", "bandpass=f=1400:w=1800,afade=t=in:d=0.3:curve=exp,"
+    "whoosh": ("anoisesrc=color=pink:d=0.55:a=0.9", "bandpass=f=1400:width_type=h:w=1800,afade=t=in:d=0.3:curve=exp,"
                "afade=t=out:st=0.3:d=0.25"),
     "whoosh_sobe": ("anoisesrc=color=white:d=0.6:a=0.8", "highpass=f=600,lowpass=f=5000,"
                     "afade=t=in:d=0.45:curve=qsin,afade=t=out:st=0.45:d=0.15"),

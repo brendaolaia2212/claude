@@ -47,26 +47,29 @@ def estados(palavras, estilo, fim_video):
     return out
 
 
-def posicao_y(bloco_h, zona_rosto, y_padrao=Y_PADRAO, bloqueios=()):
+def posicao_y(bloco_h, zona_rosto, y_padrao=Y_PADRAO, bloqueios=(), y_max=None, sem_topo=False):
     """Centro vertical da legenda: padrão em ~1180, fora de olhos e boca e de animações na tela.
     None = não tem lugar livre (a legenda some nesse trecho)."""
     def livre(y, faixas):
         return all(y + bloco_h / 2 <= a - MARGEM / 2 or y - bloco_h / 2 >= b + MARGEM / 2 for a, b in faixas)
 
     candidatos = [y_padrao]
+    baixo_max = y_max or ZONA_Y[1]          # rosto bem perto da câmera: a legenda pode descer até 1680
     if zona_rosto:
         _, z0, _, z1 = zona_rosto
-        candidatos += [z1 + MARGEM + bloco_h / 2, z0 - MARGEM - bloco_h / 2]
+        candidatos += [z1 + MARGEM + bloco_h / 2] + ([] if sem_topo else [z0 - MARGEM - bloco_h / 2])
     for a, b in bloqueios:
         candidatos += [b + MARGEM + bloco_h / 2, a - MARGEM - bloco_h / 2]
     rosto = [(zona_rosto[1], zona_rosto[3])] if zona_rosto else []
-    dentro = [y for y in candidatos if ZONA_Y[0] + bloco_h / 2 <= y <= ZONA_Y[1] - bloco_h / 2]
+    dentro = [y for y in candidatos if ZONA_Y[0] + bloco_h / 2 <= y <= baixo_max - bloco_h / 2]
     for y in sorted(dentro, key=lambda y: abs(y - y_padrao)):
         if livre(y, rosto + list(bloqueios)):
             return y
     if bloqueios:
         return None
-    return min(max(y_padrao, ZONA_Y[0] + bloco_h / 2), ZONA_Y[1] - bloco_h / 2)
+    if sem_topo:                            # nunca pula pro alto da cabeça: fica no limite de baixo
+        return baixo_max - bloco_h / 2
+    return min(max(y_padrao, ZONA_Y[0] + bloco_h / 2), baixo_max - bloco_h / 2)
 
 
 class Camada:
@@ -148,7 +151,7 @@ def _partir(lista, y_fixo):
 
 
 def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=(), deslocar=0.0,
-                  y_fixo=(), bloqueios=(), fundo=None, y_padrao=None):
+                  y_fixo=(), bloqueios=(), fundo=None, y_padrao=None, y_max=None, sem_topo=False):
     """Coloca a legenda inteira numa Camada. oculto = intervalos sem legenda;
     y_fixo = [(ini, fim, y)] pra trechos de tela dividida (legenda na emenda das metades),
              ou [(ini, fim, y0, y1[, placa])] pra tela cheia com moldura (legenda fora da faixa
@@ -181,7 +184,7 @@ def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=
             y = fixo[2]
         else:
             y = posicao_y(bloco.height, rostos.zona(ini + deslocar, fim + deslocar) if rostos else None,
-                          y_padrao=y_padrao or Y_PADRAO, bloqueios=ocupado)
+                          y_padrao=y_padrao or Y_PADRAO, bloqueios=ocupado, y_max=y_max, sem_topo=sem_topo)
         if y is None:
             continue
         x = (LARGURA - bloco.width) / 2

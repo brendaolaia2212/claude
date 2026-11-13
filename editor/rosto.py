@@ -64,7 +64,8 @@ class Rostos:
     def zona(self, ini, fim):
         """(x0, y0, x1, y1) que cobre olhos e boca de ini a fim, ou None."""
         caixas = [d["rosto"] for d in self.dados
-                  if d["rosto"] and ini - PASSO <= d["t"] <= fim + PASSO]
+                  if d["rosto"] and ini - PASSO <= d["t"] <= fim + PASSO
+                  and d["rosto"]["h"] <= 850 and d["rosto"]["y"] + d["rosto"]["h"] <= 1900]   # mão lida como rosto
         if not caixas:
             return None
         x0 = min(c["x"] for c in caixas)

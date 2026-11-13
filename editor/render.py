@@ -166,7 +166,8 @@ def render_parte(nome, ini, fim, saida, rapido=False):
         cam = Camada(tmp / "legenda")
         montar_camada(cam, palavras, est.get("legenda", "impacto"), destaque, rostos, D,
                       oculto=oculto, deslocar=ini, y_fixo=y_fixo, bloqueios=bloqueios,
-                      fundo=est.get("fundo"), y_padrao=est.get("legenda_y"))
+                      fundo=est.get("fundo"), y_padrao=est.get("legenda_y"), y_max=est.get("legenda_ate"),
+                      sem_topo=bool(est.get("legenda_sem_topo")))
         entradas += ["-f", "concat", "-safe", "0", "-i", str(cam.lista(D))]
         filtros.append(f"{atual}[{n_in}:v]overlay=0:0:format=auto[vl]")
         atual, n_in = "[vl]", n_in + 1
@@ -206,7 +207,7 @@ def render_parte(nome, ini, fim, saida, rapido=False):
 
 def _loudnorm_medir(arquivo, filtro_antes=""):
     r = rodar(["ffmpeg", "-hide_banner", "-i", str(arquivo), "-af",
-               f"{filtro_antes}loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"])
+               f"{filtro_antes}loudnorm=I=-14:TP=-2:LRA=11:print_format=json", "-f", "null", "-"])
     return json.loads(re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", r.stderr).group(0))
 
 
@@ -245,7 +246,7 @@ def _audio(nome, ed, corte, ini, D, sfx, tmp):
     m = _loudnorm_medir(misturado)
     final = tmp / "audio_final.wav"
     ffmpeg("-i", misturado, "-af",
-           f"loudnorm=I=-14:TP=-1.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
+           f"loudnorm=I=-14:TP=-2:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
            f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:"
            f"linear=true,aresample=48000,apad,atrim=0:{D:.3f}", "-ar", 48000, final)
     return final
