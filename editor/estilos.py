@@ -1,7 +1,9 @@
 """Desenho das legendas e dos ganchos, pelos nomes da lista de estilos."""
+import re
+
 from PIL import Image, ImageDraw, ImageFilter
 
-from .base import ZONA_X, cor, fonte, texto_escuro_sobre
+from .base import ZONA_X, cor, cor_painel, fonte, texto_escuro_sobre
 
 LARG_MAX = ZONA_X[1] - ZONA_X[0]   # 800 px
 BRANCO = (255, 255, 255, 255)
@@ -13,6 +15,7 @@ LEGENDAS = {
     "impacto": (3, "Anton, caixa alta, contorno preto, 1 a 3 palavras"),
     "caixa": (3, "Montserrat, caixa colorida atrás da palavra falada"),
     "gigante": (1, "Anton, uma palavra por vez, bem grande, sombra colorida"),
+    "yap": (1, "serifa branca elegante, uma palavra por vez, como no yap"),
     "pulso": (3, "Montserrat, a palavra falada cresce e ganha cor"),
     "fita": (4, "Montserrat branca numa faixa preta inclinada"),
     "papelaria": (6, "Montserrat, contorno grosso, a frase vai se escrevendo"),
@@ -24,6 +27,7 @@ GANCHOS = {
     "balao": "balão branco de conversa, como pergunta do público",
     "marcatexto": "texto escuro sobre faixas de marca-texto",
     "vidro": "painel escuro translúcido, texto branco, traço colorido",
+    "yap": "título em serifa branca + linha manuscrita (Episódio 1), como no yap",
 }
 NOMES_BONITOS = {"caixa": "Caixa na palavra", "gigante": "Palavra gigante", "balao": "Balão",
                  "marcatexto": "Marca-texto", "vidro": "Vidro escuro"}
@@ -119,7 +123,7 @@ def _ajustar(palavras, criar, tam, larg_max=LARG_MAX, linhas_max=2, minimo=0.6):
         t *= 0.92
 
 
-def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False):
+def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False, fundo=None):
     """Uma 'foto' da legenda: grupo de palavras com a palavra falada (ativa) destacada."""
     estilo = nome_estilo(estilo)
     c = cor(destaque)
@@ -136,6 +140,13 @@ def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False):
         cores = [texto_escuro_sobre(c) if i == ativa else BRANCO for i in range(n)]
         return _bloco_palavras(palavras, [f] * n, cores, 4, PRETO, 26, caixas={ativa: c},
                                sem_contorno={ativa})
+
+    if estilo == "yap":
+        p = re.sub(r"[.,;:!?…]+$", "", palavras[ativa]).strip() or palavras[ativa]
+        tam = 92
+        while _medir(fonte("instrument", tam), p)[0] > LARG_MAX and tam > 50:
+            tam -= 6
+        return halo(_bloco_palavras([p], [fonte("instrument", tam)], [BRANCO], 0, PRETO, 0))
 
     if estilo == "gigante":
         p = palavras[ativa].upper()
@@ -158,7 +169,7 @@ def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False):
                               larg_max=LARG_MAX - 80)
         caixa = txt.getchannel("A").getbbox() or (0, 0, txt.width, txt.height)
         txt = txt.crop(caixa)
-        fita = Image.new("RGBA", (txt.width + 64, txt.height + 40), (10, 10, 10, 240))
+        fita = Image.new("RGBA", (txt.width + 64, txt.height + 40), cor_painel(fundo, (10, 10, 10), 240))
         fita.alpha_composite(txt, (32, 20))
         return fita.rotate(4, expand=True, resample=Image.BICUBIC)
 
@@ -179,7 +190,7 @@ def bloco_legenda(estilo, palavras, ativa, destaque, revelar=False):
         txt = txt.crop(caixa)
         faixa = Image.new("RGBA", (txt.width + 56, txt.height + 40), (0, 0, 0, 0))
         ImageDraw.Draw(faixa).rounded_rectangle([0, 0, faixa.width - 1, faixa.height - 1], 20,
-                                                fill=(0, 0, 0, 150))
+                                                fill=cor_painel(fundo, (0, 0, 0), 150))
         faixa.alpha_composite(txt, (28, 20))
         return faixa
 
@@ -191,11 +202,31 @@ def _recortar(img):
     return img.crop(caixa) if caixa else img
 
 
-def bloco_gancho(estilo, texto, destaque):
-    """Gancho escrito do começo. texto com até 2 linhas (quebre com \\n)."""
+def bloco_gancho(estilo, texto, destaque, fundo=None, sobre=None, sub=None):
+    """Gancho escrito do começo. texto com até 2 linhas (quebre com \\n).
+    sobre/sub (só no yap): linha manuscrita acima (ex.: "Episódio 1") e abaixo do título."""
     estilo = nome_estilo(estilo)
     c = cor(destaque)
     linhas = [l.strip() for l in texto.split("\n") if l.strip()][:3]
+
+    if estilo == "yap":
+        tam = 124
+        while max(_medir(fonte("instrument", tam), l)[0] for l in linhas) > LARG_MAX - 60 and tam > 70:
+            tam -= 6
+        f = fonte("instrument", tam)
+        partes = []
+        if sobre:
+            partes.append(_recortar(_bloco_palavras([sobre], [fonte("kalam", 58)], [BRANCO], 0, PRETO, 0,
+                                                    larg_max=4000)))
+        for l in linhas:
+            partes.append(_recortar(_bloco_palavras([l], [f], [BRANCO], 0, PRETO, 0, larg_max=4000)))
+        if sub:
+            fk = fonte("kalam", 54)
+            respiro = Image.new("RGBA", (1, 16), (0, 0, 0, 0))     # o sub não encosta no título
+            partes.append(respiro)
+            for l in _quebrar_simples(sub, fk, LARG_MAX - 40):
+                partes.append(_recortar(_bloco_palavras([l], [fk], [BRANCO], 0, PRETO, 0, larg_max=4000)))
+        return halo(_empilhar(partes, 2))
 
     if estilo == "manchete":
         tam = 110
@@ -266,13 +297,38 @@ def bloco_gancho(estilo, texto, destaque):
         W, H = t.width + 100, t.height + 110
         painel = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         d = ImageDraw.Draw(painel)
-        d.rounded_rectangle([0, 0, W - 1, H - 1], 30, fill=(14, 14, 18, 185),
+        d.rounded_rectangle([0, 0, W - 1, H - 1], 30, fill=cor_painel(fundo, (14, 14, 18), 185),
                             outline=(255, 255, 255, 40), width=2)
         d.rounded_rectangle([50, 34, 170, 44], 5, fill=c)
         painel.alpha_composite(t, (50, 72))
         return sombra(painel, 18, (0, 10), 90)
 
     raise SystemExit(f"Não conheço o gancho '{estilo}'. Opções: {', '.join(GANCHOS)}")
+
+
+def halo(img):
+    """Contorno escuro bem justo + sombra larga: texto branco fino legível até em fundo claro."""
+    return sombra(sombra(img, 3, (0, 1), 235), 18, (0, 4), 150)
+
+
+def _quebrar_simples(texto, f, larg):
+    linhas, atual = [], ""
+    for p in texto.split():
+        t = (atual + " " + p).strip()
+        if _medir(f, t)[0] <= larg or not atual:
+            atual = t
+        else:
+            linhas.append(atual)
+            atual = p
+    linhas = linhas + ([atual] if atual else [])
+    if len(linhas) == 2:
+        # duas linhas equilibradas: nada de uma palavra sozinha embaixo ("abrindo as compras da minha / mãe")
+        ps = texto.split()
+        opcoes = [(" ".join(ps[:k]), " ".join(ps[k:])) for k in range(1, len(ps))]
+        cabem = [o for o in opcoes if max(_medir(f, o[0])[0], _medir(f, o[1])[0]) <= larg]
+        if cabem:
+            linhas = list(min(cabem, key=lambda o: max(_medir(f, o[0])[0], _medir(f, o[1])[0])))
+    return linhas
 
 
 def _empilhar(partes, espaco):

@@ -37,7 +37,9 @@ A imagem que ela quer passar: magnética, elegante, inteligente, feminina, sem g
 | Dica prática, IA, prompts | Pulso ou Caixa na palavra | Manchete ou Vidro escuro | médias |
 | Anúncio de produto (Shopee, TikTok Shop) | Impacto | Manchete ou Tarjas | médias |
 
-Cor: pergunte uma vez e guarde no perfil. Enquanto ela não escolher, o padrão do editor é amarelo `#FFC400`; vale mostrar no mostruário uma opção mais suave (rosa, nude, champagne) pra ela comparar. Não decida a cor da marca dela sozinha.
+**Vídeo sobre a empresa dela (Cria Aí!) ou sobre IA:** a paleta já está decidida, é a azul e laranja da marca (`perfil/cria-ai/paleta-videos.md`). Use `"cor": "#FF6A00"` e `"fundo": "#0D2B3E"` sem perguntar, mesmo se o estilo salvo tiver outra cor.
+
+Nos outros vídeos, cor: pergunte uma vez e guarde no perfil. Enquanto ela não escolher, o padrão do editor é amarelo `#FFC400`; vale mostrar no mostruário uma opção mais suave (rosa, nude, champagne) pra ela comparar. Não decida a cor da marca dela sozinha.
 
 Zoom nos cortes: sim em vídeo curto e prático; em reflexão longa, pergunte (pode ficar mais calmo sem).
 

@@ -1,9 +1,9 @@
 """Legenda no tempo: grupos de palavras, posição fora do rosto, camada de imagens."""
 import re
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
-from .base import ALTURA, FPS, LARGURA, ZONA_Y
+from .base import ALTURA, FPS, LARGURA, ZONA_Y, cor_painel
 from .estilos import LEGENDAS, bloco_legenda, nome_estilo
 
 Y_PADRAO = 1180
@@ -47,26 +47,29 @@ def estados(palavras, estilo, fim_video):
     return out
 
 
-def posicao_y(bloco_h, zona_rosto, y_padrao=Y_PADRAO, bloqueios=()):
+def posicao_y(bloco_h, zona_rosto, y_padrao=Y_PADRAO, bloqueios=(), y_max=None, sem_topo=False):
     """Centro vertical da legenda: padrão em ~1180, fora de olhos e boca e de animações na tela.
     None = não tem lugar livre (a legenda some nesse trecho)."""
     def livre(y, faixas):
         return all(y + bloco_h / 2 <= a - MARGEM / 2 or y - bloco_h / 2 >= b + MARGEM / 2 for a, b in faixas)
 
     candidatos = [y_padrao]
+    baixo_max = y_max or ZONA_Y[1]          # rosto bem perto da câmera: a legenda pode descer até 1680
     if zona_rosto:
         _, z0, _, z1 = zona_rosto
-        candidatos += [z1 + MARGEM + bloco_h / 2, z0 - MARGEM - bloco_h / 2]
+        candidatos += [z1 + MARGEM + bloco_h / 2] + ([] if sem_topo else [z0 - MARGEM - bloco_h / 2])
     for a, b in bloqueios:
         candidatos += [b + MARGEM + bloco_h / 2, a - MARGEM - bloco_h / 2]
     rosto = [(zona_rosto[1], zona_rosto[3])] if zona_rosto else []
-    dentro = [y for y in candidatos if ZONA_Y[0] + bloco_h / 2 <= y <= ZONA_Y[1] - bloco_h / 2]
+    dentro = [y for y in candidatos if ZONA_Y[0] + bloco_h / 2 <= y <= baixo_max - bloco_h / 2]
     for y in sorted(dentro, key=lambda y: abs(y - y_padrao)):
         if livre(y, rosto + list(bloqueios)):
             return y
     if bloqueios:
         return None
-    return min(max(y_padrao, ZONA_Y[0] + bloco_h / 2), ZONA_Y[1] - bloco_h / 2)
+    if sem_topo:                            # nunca pula pro alto da cabeça: fica no limite de baixo
+        return baixo_max - bloco_h / 2
+    return min(max(y_padrao, ZONA_Y[0] + bloco_h / 2), baixo_max - bloco_h / 2)
 
 
 class Camada:
@@ -119,14 +122,45 @@ class Camada:
         return caminho
 
 
+def _placa(bloco, fundo):
+    """Placa escura translúcida atrás da legenda (tela cheia de conteúdo: print de site é claro e
+    cheio de texto, e a legenda sem fundo some em cima dele)."""
+    caixa = bloco.getchannel("A").point(lambda v: 255 if v > 90 else 0).getbbox()
+    if not caixa:
+        return bloco
+    px, py = 34, 16
+    p0, p1, p2, p3 = caixa[0] - px, caixa[1] - py, caixa[2] + px, caixa[3] + py
+    L, T = min(0, p0), min(0, p1)
+    R, B = max(bloco.width, p2), max(bloco.height, p3)
+    out = Image.new("RGBA", (R - L, B - T), (0, 0, 0, 0))
+    ImageDraw.Draw(out).rounded_rectangle((p0 - L, p1 - T, p2 - L - 1, p3 - T - 1),
+                                          min(28, (p3 - p1) // 2), fill=cor_painel(fundo, (12, 12, 12), 205))
+    out.alpha_composite(bloco, (-L, -T))
+    return out
+
+
+def _partir(lista, y_fixo):
+    """Parte cada estado nas bordas dos trechos de tela cheia ([ini, fim, y0, y1...]): a legenda
+    troca de lugar (e de placa) no quadro exato em que a tela muda. Sem tela cheia, nada muda."""
+    cortes = sorted({t for f in y_fixo if len(f) > 3 for t in f[:2]})
+    for ini, fim, textos, ativa in lista:
+        # pedaço menor que 0,04 s não vira estado próprio (sumiria): fica com o vizinho
+        pontos = [ini] + [t for t in cortes if ini + 0.04 <= t <= fim - 0.04] + [fim]
+        for a, b in zip(pontos, pontos[1:]):
+            yield a, b, textos, ativa
+
+
 def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=(), deslocar=0.0,
-                  y_fixo=(), bloqueios=()):
+                  y_fixo=(), bloqueios=(), fundo=None, y_padrao=None, y_max=None, sem_topo=False):
     """Coloca a legenda inteira numa Camada. oculto = intervalos sem legenda;
-    y_fixo = [(ini, fim, y)] pra trechos de tela dividida (legenda na emenda das metades);
-    bloqueios = [(ini, fim, y0, y1)] faixas ocupadas por animações."""
+    y_fixo = [(ini, fim, y)] pra trechos de tela dividida (legenda na emenda das metades),
+             ou [(ini, fim, y0, y1[, placa])] pra tela cheia com moldura (legenda fora da faixa
+             y0-y1, numa placa escura translúcida, a não ser que placa seja False);
+    bloqueios = [(ini, fim, y0, y1)] faixas ocupadas por animações;
+    y_padrao = altura preferida da legenda (estilo "legenda_y"; rosto bem perto da câmera pede mais baixo)."""
     estilo = nome_estilo(estilo)
     revelar = estilo == "papelaria"
-    for ini, fim, textos, ativa in estados(palavras, estilo, fim_video):
+    for ini, fim, textos, ativa in _partir(estados(palavras, estilo, fim_video), y_fixo):
         for a, b in oculto:
             if ini < b and fim > a:
                 if ini >= a:
@@ -135,16 +169,26 @@ def montar_camada(camada, palavras, estilo, destaque, rostos, fim_video, oculto=
                     fim = a
         if fim - ini < 0.04:
             continue
-        bloco = bloco_legenda(estilo, textos, ativa, destaque, revelar=revelar)
-        fixo = next((y for a, b, y in y_fixo if ini < b and fim > a), None)
+        bloco = bloco_legenda(estilo, textos, ativa, destaque, revelar=revelar, fundo=fundo)
+        fixo = next((f for f in y_fixo if ini < f[1] and fim > f[0]), None)
         ocupado = [(y0, y1) for a, b, y0, y1 in bloqueios if ini < b and fim > a]
-        y = fixo if fixo is not None else \
-            posicao_y(bloco.height, rostos.zona(ini + deslocar, fim + deslocar) if rostos else None,
-                      bloqueios=ocupado)
+        placa = fixo is not None and len(fixo) > 3 and (len(fixo) < 5 or fixo[4]) \
+            and estilo not in ("fita", "discreta")
+        if placa:
+            bloco = _placa(bloco, fundo)
+        if fixo is not None and len(fixo) > 3:
+            # tela cheia com moldura no canto: altura de sempre, só fugindo da faixa da moldura
+            # (o rosto dela em tela cheia não está na tela nesse trecho)
+            y = posicao_y(bloco.height, None, bloqueios=ocupado + [tuple(fixo[2:4])])
+        elif fixo is not None:
+            y = fixo[2]
+        else:
+            y = posicao_y(bloco.height, rostos.zona(ini + deslocar, fim + deslocar) if rostos else None,
+                          y_padrao=y_padrao or Y_PADRAO, bloqueios=ocupado, y_max=y_max, sem_topo=sem_topo)
         if y is None:
             continue
         x = (LARGURA - bloco.width) / 2
         if estilo == "fita":
             x = 120
         camada.colocar(bloco, x, y - bloco.height / 2, ini, fim,
-                       chave=(tuple(textos), ativa, int(y)))
+                       chave=(tuple(textos), ativa, int(y), placa))

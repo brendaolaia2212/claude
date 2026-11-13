@@ -1,0 +1,509 @@
+{
+ "gancho": {
+  "texto": "Por trás de cada pacote,\nexiste uma mulher",
+  "sobre": "Episódio 4",
+  "sub": "abrindo as compras da minha mãe"
+ },
+ "frases": [
+  {
+   "de": 58,
+   "ate": 65,
+   "texto": "ressignificar a minha vida, ressignificar o meu luto,",
+   "destaque": [
+    65
+   ],
+   "por_que": "Propósito da série dito logo na abertura (0:54); a repetição tem ritmo e prende cedo.",
+   "quebras": [
+    1,
+    4,
+    5
+   ]
+  },
+  {
+   "de": 157,
+   "ate": 168,
+   "texto": "na cabeça dela, ela tinha certeza que ela ia voltar para casa",
+   "destaque": [
+    166,
+    168
+   ],
+   "por_que": "Primeiro golpe emocional (2:07). 'voltar' ecoa com 'não vai voltar' e com 'voltar para a própria vida'.",
+   "quebras": [
+    3,
+    6,
+    10
+   ]
+  },
+  {
+   "de": 322,
+   "ate": 330,
+   "texto": "Nunca imaginei que fosse furar a bolha e viralizar",
+   "destaque": [
+    328
+   ],
+   "por_que": "Prova social dita com humildade (3:28); faz quem chegou agora sentir que entrou em algo maior e dá movimento ao trecho de contexto.",
+   "quebras": [
+    2,
+    4,
+    7
+   ]
+  },
+  {
+   "de": 500,
+   "ate": 508,
+   "texto": "Que bom gosto, mãe. A senhora arrasou nessa comprinha.",
+   "destaque": [
+    506
+   ],
+   "por_que": "Reação terna falando direto com a mãe (5:09), logo depois da revelação. Fica curta pra deixar 'A senhora arrasou nessa comprinha' como cartão manuscrito leve (diminutivo fora da letra grande).",
+   "quebras": [
+    4,
+    7
+   ]
+  },
+  {
+   "de": 569,
+   "ate": 577,
+   "texto": "essa calça aqui ficaria o puro suco da elegância",
+   "destaque": [
+    577
+   ],
+   "por_que": "Humor maduro (6:41) no trecho em que ela prova a calça; mantém o ritmo.",
+   "quebras": [
+    3,
+    4,
+    7
+   ]
+  },
+  {
+   "de": 659,
+   "ate": 672,
+   "texto": "Cada pacote que eu abro é mais um passo para aceitação que eu dou.",
+   "destaque": [
+    669
+   ],
+   "por_que": "A virada do episódio (7:45), a mais citável: resume a série inteira. Entra devagar, sem som e sem pulo (zona sensível 7:21-8:40).",
+   "quebras": [
+    5,
+    9,
+    11
+   ]
+  },
+  {
+   "de": 896,
+   "ate": 907,
+   "texto": "Icônica, autêntica, um verdadeiro cometa. A minha mãe era uma pessoa comum.",
+   "destaque": [
+    900,
+    907
+   ],
+   "por_que": "A contradição verdadeira do episódio (9:43): extraordinária e comum ao mesmo tempo, com as palavras dela.",
+   "quebras": [
+    2,
+    5,
+    9
+   ]
+  },
+  {
+   "de": 1068,
+   "ate": 1075,
+   "texto": "ninguém compra nada pensando que vai falecer, né?",
+   "destaque": [
+    1074
+   ],
+   "por_que": "A frase mais forte (10:47). Depende das correções 1070, 1071 e 1074 ('falecer', conferido no áudio pelo medium e pela guardiã). Sem som, entrada sóbria.",
+   "quebras": [
+    1,
+    3,
+    6
+   ]
+  },
+  {
+   "de": 1091,
+   "ate": 1098,
+   "texto": "imaginou que seria eu quem abriria esses pacotes.",
+   "destaque": [
+    1094
+   ],
+   "por_que": "A pergunta mais íntima (11:02); o 'eu' em destaque dá o peso de ser a filha abrindo.",
+   "quebras": [
+    3,
+    6
+   ],
+   "tam": 112,
+   "y": 1210
+  },
+  {
+   "de": 1195,
+   "ate": 1200,
+   "texto": "a gente não precisa de muito",
+   "destaque": [
+    1200
+   ],
+   "quebras": [
+    2,
+    4
+   ],
+   "por_que": "reflexão (1ª parte)"
+  },
+  {
+   "de": 1201,
+   "ate": 1207,
+   "texto": "para ser protagonista da nossa própria história.",
+   "destaque": [
+    1203
+   ],
+   "quebras": [
+    2,
+    3,
+    5
+   ],
+   "por_que": "reflexão (2ª parte)"
+  },
+  {
+   "de": 1238,
+   "ate": 1243,
+   "texto": "ela sabia de uma maneira ímpar",
+   "destaque": [
+    1243
+   ],
+   "quebras": [
+    2,
+    4
+   ],
+   "por_que": "arremate (1ª parte)"
+  },
+  {
+   "de": 1244,
+   "ate": 1250,
+   "texto": "construir enredo e colocar tempero na vida.",
+   "destaque": [
+    1248
+   ],
+   "quebras": [
+    2,
+    4
+   ],
+   "por_que": "arremate (2ª parte)"
+  },
+  {
+   "de": 240,
+   "ate": 252,
+   "texto": "a maioria desses pacotes aqui chegaram quando ela já não estava mais aqui.",
+   "destaque": [
+    252
+   ],
+   "quebras": [
+    2,
+    5,
+    8
+   ],
+   "por_que": "buraco no começo"
+  },
+  {
+   "de": 811,
+   "ate": 818,
+   "texto": "Esses vídeos são registros da minha própria vida",
+   "destaque": [
+    818
+   ],
+   "quebras": [
+    2,
+    4,
+    6
+   ],
+   "por_que": "buraco depois do pico"
+  },
+  {
+   "de": 731,
+   "ate": 737,
+   "texto": "por trás de cada pacote desse aqui,",
+   "destaque": [],
+   "quebras": [
+    2,
+    5
+   ],
+   "por_que": "resposta do gancho (1ª parte)"
+  },
+  {
+   "de": 738,
+   "ate": 748,
+   "texto": "existe uma mulher que estava esperando voltar para a própria vida.",
+   "destaque": [
+    740,
+    744,
+    748
+   ],
+   "quebras": [
+    3,
+    5,
+    7
+   ],
+   "por_que": "resposta do gancho (2ª parte)"
+  },
+  {
+   "de": 17,
+   "ate": 23,
+   "texto": "continuaram chegando mesmo depois que ela partiu,",
+   "destaque": [
+    23
+   ],
+   "quebras": [
+    1,
+    2,
+    4
+   ],
+   "por_que": "premissa da série logo depois do gancho"
+  },
+  {
+   "de": 617,
+   "ate": 624,
+   "texto": "eu não consegui abrir nenhum desses pacotes sozinha.",
+   "destaque": [
+    624
+   ],
+   "quebras": [
+    3,
+    5,
+    7
+   ],
+   "por_que": "maior vazio (3:38-4:09)"
+  },
+  {
+   "de": 863,
+   "ate": 874,
+   "texto": "E eu vou contar a história dela aos poucos aqui para vocês.",
+   "destaque": [
+    868
+   ],
+   "quebras": [
+    4,
+    7,
+    10
+   ],
+   "por_que": "promessa da série"
+  },
+  {
+   "de": 1275,
+   "ate": 1278,
+   "texto": "e escolha deixar legado.",
+   "destaque": [
+    1278
+   ],
+   "quebras": [
+    2
+   ],
+   "por_que": "última mensagem dela"
+  }
+ ],
+ "cartoes_leves": [
+  {
+   "de": 469,
+   "ate": 475,
+   "texto": "areia? terra?\nela gostava muito\nde plantas",
+   "fim_max": "antes_foco_mao",
+   "y": 1380
+  },
+  {
+   "de": 136,
+   "ate": 144,
+   "texto": "esse era o maior\nhobby dela,\ncomprar na internet"
+  },
+  {
+   "de": 973,
+   "ate": 980,
+   "texto": "com suas manias,\ncom seus desejos,\nteimosias, gostos"
+  }
+ ],
+ "reacoes_zoom": [
+  {
+   "de": 429,
+   "ate": 434,
+   "motivo": "4:16 'inclusive é muito pesado, esse aqui': arma a curiosidade do pacote pesado."
+  },
+  {
+   "de": 445,
+   "ate": 447,
+   "motivo": "4:23 'Não faço ideia': dúvida curta."
+  },
+  {
+   "de": 477,
+   "ate": 478,
+   "motivo": "4:38-4:49 (sem fala): ZOOM NA MÃO abrindo o saco e tirando a calça, pedido dela pra trazer ansiedade e suspense; abre de volta pro rosto quando a calça aparece/desdobra (4:46-4:49)."
+  },
+  {
+   "de": 482,
+   "ate": 485,
+   "motivo": "4:55 'lindíssima inclusive, muito linda': encanto logo após a revelação."
+  },
+  {
+   "de": 509,
+   "ate": 514,
+   "motivo": "5:29 'Calça, pantalona, aprovadíssima, amei essa daqui': veredito."
+  },
+  {
+   "de": 531,
+   "ate": 536,
+   "motivo": "5:51 'E essa aí é da Shopee': piada interna da série."
+  },
+  {
+   "de": 908,
+   "ate": 911,
+   "motivo": "9:47 'Comum como todos nós': a contradição verdadeira."
+  },
+  {
+   "de": 1251,
+   "ate": 1253,
+   "motivo": "12:32 'Isso ela sabia.': afirmação curta e orgulhosa."
+  },
+  {
+   "de": 1279,
+   "ate": 1281,
+   "motivo": "12:42 'Até amanhã, pessoal.': despedida calorosa."
+  }
+ ],
+ "emocao_lenta": [
+  {
+   "de": 145,
+   "ate": 261,
+   "motivo": "2:03-3:00: ela imagina a mãe voltando pra casa e abrindo os pacotinhos que amava; os pacotes chegaram quando ela já não estava mais aqui."
+  },
+  {
+   "de": 609,
+   "ate": 672,
+   "motivo": "7:21-7:50: dois meses sem conseguir abrir; abrir é aceitar que ela não vai voltar. Nada pulando aqui."
+  },
+  {
+   "de": 673,
+   "ate": 712,
+   "motivo": "7:51-8:12: a série e os comentários ajudam a chegar mais perto dela e a lidar com a dor da perda."
+  },
+  {
+   "de": 713,
+   "ate": 774,
+   "motivo": "8:17-8:39: o choro e a frase da mulher que esperava voltar para a própria vida. Auge emocional, aproximação bem lenta, sem som."
+  },
+  {
+   "de": 1039,
+   "ate": 1075,
+   "motivo": "10:37-10:50: no hospital ela fazia planos; ninguém compra nada pensando que vai falecer."
+  },
+  {
+   "de": 1076,
+   "ate": 1114,
+   "motivo": "10:57-11:16: será que ela imaginou que seria a filha quem abriria os pacotes."
+  },
+  {
+   "de": 1208,
+   "ate": 1236,
+   "motivo": "12:15-12:27: mulher anônima que deixou legado e muitas histórias."
+  }
+ ],
+ "sons_tempo": [
+  {
+   "t_orig": 282.15,
+   "tipo": "suspense",
+   "db": -21,
+   "momento": "fim do tirar do saco, subindo até ela levantar a calça"
+  },
+  {
+   "t_orig": 286.3,
+   "tipo": "brilho",
+   "db": -20,
+   "momento": "ela levanta a calça"
+  }
+ ],
+ "sons": [
+  {
+   "indice": 511,
+   "tipo": "aprovado",
+   "db": -24
+  },
+  {
+   "indice": 731,
+   "tipo": "whoosh",
+   "db": -23
+  },
+  {
+   "indice": 1124,
+   "tipo": "whoosh",
+   "db": -25
+  }
+ ],
+ "som_gancho": {
+  "tipo": "whoosh_sobe",
+  "db": -20
+ },
+ "legenda_post": "Abrindo as compras da minha mãe · episódio 4\n\nHoje foi uma calça pantalona, de malha geladinha, que veio da Shopee. Que bom gosto, mãe.\n\nEla estava criando um estilo muito elegante, refazendo o guarda-roupa dela. E essa calça combina com o kit de t-shirt e com o óculos.\n\nDurante esses dois meses, eu não consegui abrir nenhum desses pacotes sozinha. Parecia que, a cada um que eu abrisse, eu estaria aceitando que ela realmente não vai voltar. Cada pacote que eu abro é mais um passo pra aceitação.\n\nMas tem uma coisa que eu enxergo claramente: por trás de cada pacote desses existe uma mulher que estava esperando voltar pra própria vida. Porque ninguém compra nada pensando que vai falecer.\n\nA minha mãe era uma mulher comum, anônima. Com as manias dela, as teimosias, os gostos e um jeito muito próprio de enxergar as coisas. Ela não está mais aqui, mas deixou legado, deixou história. Ela sabia, de uma maneira ímpar, colocar tempero na vida.\n\nAmanhã tem o episódio 5.\n\n#luto #lutomaterno #maeefilha #saudadedemae #abrindoascomprasdaminhamae",
+ "comentario_fixado": "Eu ainda não sei o que tem naquele pacote de dois quilos. Ela gostava muito de plantas, então eu fico entre areia e terra. Alguém tem outro palpite?",
+ "titulo_capa": "Ninguém compra nada pensando que vai falecer",
+ "proximo": {
+  "de": 1123,
+  "ate": 1125,
+  "texto": "Episódio 5",
+  "sobre": "amanhã"
+ },
+ "trocas_frase": {
+  "167": "pra",
+  "65": "luto.",
+  "1098": "pacotes?"
+ },
+ "fx_extra": [
+  {
+   "tipo": "zoom",
+   "inicio": 42.05,
+   "fim": 43.35,
+   "escala": 1.1,
+   "entrada": 0.3,
+   "saida": 0.35,
+   "por_que": "vivendo com muita dor"
+  },
+  {
+   "tipo": "zoom",
+   "inicio": 119.28,
+   "fim": 120.58,
+   "escala": 1.1,
+   "entrada": 0.3,
+   "saida": 0.35,
+   "por_que": "virada pro unboxing"
+  },
+  {
+   "tipo": "zoom",
+   "inicio": 227.053,
+   "fim": 228.353,
+   "escala": 1.1,
+   "entrada": 0.3,
+   "saida": 0.35,
+   "por_que": "montando o novo guarda-roupa"
+  },
+  {
+   "tipo": "zoom",
+   "inicio": 370.1,
+   "fim": 371.4,
+   "escala": 1.1,
+   "entrada": 0.3,
+   "saida": 0.35,
+   "por_que": "É o que me pega tanto"
+  },
+  {
+   "tipo": "dolly",
+   "inicio": 274.233,
+   "fim": 278.0,
+   "escala": 1.04,
+   "por_que": "choro, sem recuo"
+  },
+  {
+   "tipo": "dolly",
+   "inicio": 80.3,
+   "fim": 83.9,
+   "escala": 1.04,
+   "por_que": "frase dura do começo, sem recuo"
+  }
+ ],
+ "fx_mover": [
+  {
+   "de": 195.83,
+   "para": 196.07
+  }
+ ]
+}

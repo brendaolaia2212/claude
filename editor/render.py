@@ -1,10 +1,13 @@
-"""Montagem final (ou de uma amostra) em cima do corte.mp4 aprovado."""
+"""Montagem final (ou de uma amostra) em cima do corte.mp4 aprovado.
+
+"tela_cheia" (conteúdo na tela toda, ela numa moldura no canto) é montada por editor/telacheia.py.
+"""
 import json
 import re
 
 from PIL import Image
 
-from . import animacoes, sons
+from . import animacoes, sons, telacheia
 from .base import (ALTURA, FPS, LARGURA, ZONA_Y, COR_PADRAO, ffmpeg, ler_edicao, ler_json,
                    pasta, quadros, rodar, sondar)
 from .estilos import bloco_gancho
@@ -15,7 +18,8 @@ ZOOM = 1.08
 
 
 def _entre(intervalos):
-    return "+".join(f"between(t,{a:.3f},{b:.3f})" for a, b in intervalos) or "0"
+    # o fim fica de fora (o 1º quadro do plano seguinte não herda o efeito do anterior)
+    return "+".join(f"(gte(t,{a:.3f})*lt(t,{b - 0.005:.3f}))" for a, b in intervalos) or "0"
 
 
 def _gancho(camada, ed, rostos, ini, D):
@@ -26,10 +30,19 @@ def _gancho(camada, ed, rostos, ini, D):
     if g1 <= 0 or g0 >= D:
         return []
     estilo = ed["estilo"].get("gancho", "manchete")
-    bloco = bloco_gancho(estilo, g["texto"], ed["estilo"].get("cor", COR_PADRAO))
+    bloco = bloco_gancho(estilo, g["texto"], ed["estilo"].get("cor", COR_PADRAO),
+                         ed["estilo"].get("fundo"), sobre=g.get("sobre"), sub=g.get("sub"))
     topo = 260
     zona = rostos.zona(g0 + ini, g1 + ini) if rostos else None
-    if zona and topo + bloco.height > zona[1] - 20:
+    if g.get("escala"):                       # gancho maior (rosto bem perto da câmera, texto embaixo)
+        e_ = min(float(g["escala"]), (LARGURA - 80) / bloco.width)
+        bloco = bloco.resize((int(bloco.width * e_), int(bloco.height * e_)), Image.LANCZOS)
+    if "y" in g:                              # altura escolhida (centro do bloco)
+        topo = int(min(max(g["y"] - bloco.height / 2, ZONA_Y[0]), ZONA_Y[1] - bloco.height))
+    elif estilo == "yap" and zona and topo + bloco.height > zona[1] - 20:
+        # rosto alto no quadro (ela perto da câmera): o título vai pra baixo da boca
+        topo = min(ZONA_Y[1] - bloco.height, zona[3] + 50)
+    elif zona and topo + bloco.height > zona[1] - 20:
         caber = max(0.7, (zona[1] - 20 - topo) / bloco.height)
         bloco = bloco.resize((int(bloco.width * caber), int(bloco.height * caber)), Image.LANCZOS)
     x = (LARGURA - bloco.width) / 2
@@ -64,6 +77,8 @@ def render_parte(nome, ini, fim, saida, rapido=False):
     est = ed.get("estilo", {})
     destaque = est.get("cor", COR_PADRAO)
     corte = p / "corte.mp4"
+    if ed.get("fx") and (p / "corte_fx.mp4").exists():
+        corte = p / "corte_fx.mp4"     # zoom, tremor e flash já aplicados no vídeo dela
     dur_corte = sondar(corte)["duracao"]
     fim = min(fim, dur_corte)
     D = fim - ini
@@ -79,6 +94,14 @@ def render_parte(nome, ini, fim, saida, rapido=False):
     # zoom nos cortes: alterna 1,00 e 1,08 a cada emenda, centrado no rosto
     if est.get("zoom", True):
         emendas = [0.0] + ler_json(p / "emendas.json", []) + [dur_corte]
+        _f, _i = [emendas[0]], 1                  # trecho minúsculo (< 0,5 s) não ganha nível próprio
+        while _i < len(emendas) - 1:
+            if _i + 1 < len(emendas) - 1 and emendas[_i + 1] - emendas[_i] < 0.5:
+                _i += 2
+                continue
+            _f.append(emendas[_i])
+            _i += 1
+        emendas = _f + [emendas[-1]]
         trechos = [(emendas[k] - ini, emendas[k + 1] - ini) for k in range(1, len(emendas) - 1, 2)]
         trechos = [(max(0, a), min(D, b)) for a, b in trechos if b > 0 and a < D]
         if trechos:
@@ -109,20 +132,32 @@ def render_parte(nome, ini, fim, saida, rapido=False):
         y_fixo.append((a, b, ALTURA / 2))
         sfx.append({"t": max(0.0, a), "tipo": "pop", "db": -17})
 
+    # tela cheia de conteúdo com ela numa moldura pequena no canto (editor/telacheia.py)
+    if ed.get("tela_cheia"):
+        atual, n_in, yf, sf = telacheia.montar(ed, ini, D, corte, rostos, tmp, entradas, filtros,
+                                               n_in, atual, rapido)
+        y_fixo += yf
+        sfx += sf
+        oculto += [(float(t["inicio"]) - ini, float(t["fim"]) - ini) for t in ed["tela_cheia"]
+                   if t.get("legenda") is False]
+
     # animações (gravadas antes, pra saber onde ficam e esconder a legenda se cobrirem a faixa)
     anims, bloqueios = [], []
     for k, a in enumerate(_lista_animacoes(ed, dur_corte)):
         if a["inicio"] < ini - 0.05 or a["inicio"] >= fim:
             continue
         mov = tmp / f"anim{k:02d}.mov"
-        x, y, W, H, sons_a, dur_a = animacoes.renderizar(a, destaque, mov, rostos.zona(a["inicio"], a["fim"]))
+        x, y, W, H, sons_a, dur_a = animacoes.renderizar(a, destaque, mov, rostos.zona(a["inicio"], a["fim"]),
+                                                        est.get("fundo"))
         t0 = a["inicio"] - ini
         anims.append((mov, x, y, t0, min(D, t0 + dur_a)))
         if a["tipo"] != "chamada":
             bloqueios.append((t0, t0 + dur_a, y, y + H))
         else:
             oculto.append((t0, D))
-        sfx += [{"t": t0 + ts, "tipo": tipo, "db": db} for tipo, ts, db in sons_a]
+        for som in sons_a:
+            tipo, ts, db = som[:3]
+            sfx.append({"t": t0 + ts, "tipo": tipo, "db": db, "junto": len(som) > 3 and bool(som[3])})
 
     # legenda e gancho: camadas de imagens com duração
     palavras = [dict(w, s=w["s"] - ini, e=w["e"] - ini)
@@ -130,7 +165,9 @@ def render_parte(nome, ini, fim, saida, rapido=False):
     if est.get("legenda", "impacto") != "nenhuma":
         cam = Camada(tmp / "legenda")
         montar_camada(cam, palavras, est.get("legenda", "impacto"), destaque, rostos, D,
-                      oculto=oculto, deslocar=ini, y_fixo=y_fixo, bloqueios=bloqueios)
+                      oculto=oculto, deslocar=ini, y_fixo=y_fixo, bloqueios=bloqueios,
+                      fundo=est.get("fundo"), y_padrao=est.get("legenda_y"), y_max=est.get("legenda_ate"),
+                      sem_topo=bool(est.get("legenda_sem_topo")))
         entradas += ["-f", "concat", "-safe", "0", "-i", str(cam.lista(D))]
         filtros.append(f"{atual}[{n_in}:v]overlay=0:0:format=auto[vl]")
         atual, n_in = "[vl]", n_in + 1
@@ -158,6 +195,9 @@ def render_parte(nome, ini, fim, saida, rapido=False):
 
     if est.get("sons", True) is False:
         sfx = []
+    if ed.get("sons_so_extras"):
+        # só os efeitos escolhidos a dedo em "sons_extra" (pedido dela: 5 ou 6 no vídeo todo)
+        sfx = []
     sfx = sons.espalhar([s for s in ed.get("sons_extra", []) if ini <= s["t"] < fim] + sfx)
     audio = _audio(nome, ed, corte, ini, D, sfx, tmp)
     ffmpeg("-i", video, "-i", audio, "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac",
@@ -167,7 +207,7 @@ def render_parte(nome, ini, fim, saida, rapido=False):
 
 def _loudnorm_medir(arquivo, filtro_antes=""):
     r = rodar(["ffmpeg", "-hide_banner", "-i", str(arquivo), "-af",
-               f"{filtro_antes}loudnorm=I=-14:TP=-1:LRA=11:print_format=json", "-f", "null", "-"])
+               f"{filtro_antes}loudnorm=I=-14:TP=-2:LRA=11:print_format=json", "-f", "null", "-"])
     return json.loads(re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", r.stderr).group(0))
 
 
@@ -181,8 +221,10 @@ def _audio(nome, ed, corte, ini, D, sfx, tmp):
         voz_i = float(_loudnorm_medir(voz)["input_i"])
         alvo = max(-60, voz_i - float(trilha.get("abaixo_db", 22)))
         entradas += ["-stream_loop", "-1", "-i", trilha["arquivo"]]
+        sai = min(1.5, D / 4)                   # trilha some suave no fim (sem parar seco)
         filtros.append(f"[0:a]asplit[vz][sc];[{n}:a]atrim=0:{D:.3f},aresample=48000,"
-                       f"aformat=channel_layouts=stereo,loudnorm=I={alvo:.1f}:TP=-6,apad,atrim=0:{D:.3f}[mus];"
+                       f"aformat=channel_layouts=stereo,loudnorm=I={alvo:.1f}:TP=-6,apad,atrim=0:{D:.3f},"
+                       f"afade=t=in:d=0.05,afade=t=out:st={D - sai:.3f}:d={sai:.3f}[mus];"
                        f"[mus][sc]sidechaincompress=threshold=0.03:ratio=5:attack=15:release=350[md]")
         mix = ["[vz]", "[md]"]
         n += 1
@@ -204,7 +246,7 @@ def _audio(nome, ed, corte, ini, D, sfx, tmp):
     m = _loudnorm_medir(misturado)
     final = tmp / "audio_final.wav"
     ffmpeg("-i", misturado, "-af",
-           f"loudnorm=I=-14:TP=-1:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
+           f"loudnorm=I=-14:TP=-2:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
            f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:"
            f"linear=true,aresample=48000,apad,atrim=0:{D:.3f}", "-ar", 48000, final)
     return final
@@ -229,6 +271,9 @@ def janelas_amostra(nome):
     tds = sorted(ed.get("tela_dividida", []), key=lambda t: t["inicio"])
     if tds and tds[0]["inicio"] > 9.0:
         js.append((max(0, tds[0]["inicio"] - 1), min(dur, tds[0]["inicio"] + 3)))
+    tcs = sorted(ed.get("tela_cheia", []), key=lambda t: t["inicio"])
+    if tcs and tcs[0]["inicio"] > 9.0:
+        js.append((max(0, tcs[0]["inicio"] - 1), min(dur, tcs[0]["fim"] + 1, tcs[0]["inicio"] + 4)))
     js.sort()
     unidas = []
     for a, b in js:

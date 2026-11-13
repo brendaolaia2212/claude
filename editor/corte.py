@@ -1,7 +1,9 @@
 """Plano de corte (pausas, tomadas repetidas, muletas) e montagem do corte.mp4."""
 import difflib
 import json
+import math
 import re
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 
 from .base import (FPS, ALTURA, LARGURA, ffmpeg, ler_edicao, ler_json, mmss, pasta,
@@ -110,13 +112,20 @@ def _juntar_trechos(manter, palavras, silencios, duracao):
     return _quantizar(unidos)
 
 
-def _quantizar(trechos):
-    """Cada trecho com duração em quadros inteiros: voz e imagem nunca escorregam."""
+def _quantizar(trechos, perto=False):
+    """Cada trecho com duração em quadros inteiros: voz e imagem nunca escorregam.
+
+    perto=False: o começo arredonda pra trás e o fim pra frente (sem bordas pelo som,
+    nunca come o começo nem o fim da palavra). perto=True: quadro mais perto (as bordas
+    pelo som já têm folga; arredondar pra fora poderia entrar no respiro seguinte)."""
     out = []
     for s, e in trechos:
-        n = int(round((e - s) * FPS))
-        if n >= 3:
-            out.append([round(s, 3), round(s + n / FPS, 4)])
+        a = round(s * FPS) if perto else math.floor(s * FPS + 1e-6)
+        b = round(e * FPS) if perto else math.ceil(e * FPS - 1e-6)
+        if out and a <= round(out[-1][1] * FPS):
+            a = round(out[-1][1] * FPS)
+        if b - a >= 3:
+            out.append([round(a / FPS, 4), round(b / FPS, 4)])
     return out
 
 
@@ -135,13 +144,45 @@ def planejar(nome):
     fora = set(mul)
     for k in frases_fora:
         fora |= {w["i"] for w in frases[k]}
+    # decisões feitas lendo a fala (índices de palavra, intervalos fechados)
+    for a, b in ed.get("tirar_palavras", []):
+        fora |= set(range(a, b + 1))
+    for a, b in ed.get("manter_palavras", []):
+        fora -= set(range(a, b + 1))
     manter = [i for i in range(len(palavras)) if i not in fora]
-    trechos = _juntar_trechos(manter, palavras, sil, dur)
+    en = _energia(nome)
+    if en:
+        from .bordas import conferir, trechos_por_energia
+        acoes = [tuple(x) for x in ed.get("acoes", [])]
+        trechos = _quantizar(trechos_por_energia(manter, palavras, en, dur, PAUSA_MAX, acoes), perto=True)
+        arriscados = conferir(trechos, en)
+        # borda que cai com som (fala emendada): emenda mais macia, sem estalo
+        fades = [[0.04 if en.tem_som(s + 0.012) else 0.01, 0.04 if en.tem_som(e - 0.012) else 0.01]
+                 for s, e in trechos]
+    else:
+        trechos = _juntar_trechos(manter, palavras, sil, dur)
+        arriscados, fades = [], None
+    # momentos sem fala que ficam inteiros (ela levantando a calça, mostrando no corpo)
+    extra = [[float(a), float(b)] for a, b in ed.get("manter_tempos", [])]
+    if extra:
+        todos = sorted([list(x) for x in trechos] + _quantizar(extra))
+        unidos = []
+        for a, b in todos:
+            if unidos and a <= unidos[-1][1] + 0.02:
+                unidos[-1][1] = max(unidos[-1][1], b)
+            else:
+                unidos.append([a, b])
+        trechos = unidos
+        if en:
+            fades = [[0.04 if en.tem_som(a + 0.012) else 0.01, 0.04 if en.tem_som(b - 0.012) else 0.01]
+                     for a, b in trechos]
 
     pausas = sum(1 for a, b in zip(trechos, trechos[1:]) if b[0] - a[1] > PAUSA_MAX)
     final = sum(e - s for s, e in trechos)
     longas = [w for w in palavras if w["e"] - w["s"] > 1.2]
     ed["corte"] = {"segmentos": trechos, "palavras": manter}
+    if fades:
+        ed["corte"]["fades"] = fades
     salvar_edicao(nome, ed)
 
     linhas = [f"Tirei {pausas} pausa(s), {len(frases_fora)} frase(s) repetida(s) ou abandonada(s)"
@@ -156,7 +197,25 @@ def planejar(nome):
     for w in longas:
         linhas.append(f"Atenção: \"{w['w']}\" em {mmss(w['s'])} dura {w['e'] - w['s']:.1f}s, "
                       "pode ter frase repetida escondida. Vale ouvir.")
+    if en:
+        linhas.append(f"Bordas pelo som: {2 * len(trechos)} pontas de corte, "
+                      f"{len(arriscados)} caem com som (fala emendada).")
+        for t, lado in arriscados[:15]:
+            linhas.append(f"  Conferir borda ({lado}) em {mmss(t)} do original")
     return "\n".join(linhas)
+
+
+def _energia(nome):
+    """Energia do áudio (voz16k.wav que o transcrever deixa) pras bordas dos cortes."""
+    from .bordas import Energia
+    p = pasta(nome)
+    wav = p / "voz16k.wav"
+    if not wav.exists():
+        ed = ler_edicao(nome)
+        if not sondar(ed["original"])["tem_som"]:
+            return None
+        ffmpeg("-i", ed["original"], "-vn", "-ac", 1, "-ar", 16000, "-c:a", "pcm_s16le", wav)
+    return Energia(wav)
 
 
 def corte_para_original(segmentos):
@@ -183,18 +242,25 @@ def tirar(nome, ini, fim):
         if of < e:
             novos.append([of, e])
     ed["corte"]["segmentos"] = _quantizar(novos)
+    ed["corte"].pop("fades", None)
     salvar_edicao(nome, ed)
     return sum(e - s for s, e in ed["corte"]["segmentos"])
 
 
-def _filtro_video(info):
-    return (f"scale={LARGURA}:{ALTURA}:force_original_aspect_ratio=increase,"
-            f"crop={LARGURA}:{ALTURA},fps={FPS},setsar=1,format=yuv420p")
+def tamanho(ed):
+    """(largura, altura) do vídeo editado: em pé (padrão) ou 16:9 pro YouTube."""
+    return (1920, 1080) if ed.get("formato") == "16:9" else (LARGURA, ALTURA)
+
+
+def _filtro_video(info, ed=None):
+    L, A = tamanho(ed or {})
+    return (f"scale={L}:{A}:force_original_aspect_ratio=increase,"
+            f"crop={L}:{A},fps={FPS},setsar=1,format=yuv420p")
 
 
 def _extrair(args):
     """Um trecho: vídeo .mp4 (sem som) e som .wav separados, os dois com a mesma duração exata."""
-    i, (s, e), original, saida, vf, tem_som = args
+    i, (s, e), original, saida, vf, tem_som, (fi, fo) = args
     n = int(round((e - s) * FPS))
     d = n / FPS
     entrada = ["-ss", f"{s:.4f}", "-t", f"{d + 0.2:.4f}", "-i", original]
@@ -202,8 +268,8 @@ def _extrair(args):
            "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-g", "30",
            "-video_track_timescale", "15360", f"{saida}.mp4")
     if tem_som:
-        af = (f"aresample=48000,aformat=channel_layouts=stereo,afade=t=in:d=0.01,"
-              f"apad,atrim=end_sample={int(round(d * 48000))},afade=t=out:st={d - 0.01:.5f}:d=0.01")
+        af = (f"aresample=48000,aformat=channel_layouts=stereo,afade=t=in:d={fi},"
+              f"apad,atrim=end_sample={int(round(d * 48000))},afade=t=out:st={d - fo:.5f}:d={fo}")
         ffmpeg(*entrada, "-map", "0:a:0", "-af", af, "-c:a", "pcm_s16le", "-ar", 48000, f"{saida}.wav")
     else:
         ffmpeg("-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo", "-t", f"{d:.5f}",
@@ -211,7 +277,46 @@ def _extrair(args):
     return saida
 
 
+MODELO_RUIDO = Path(__file__).resolve().parent.parent / "recursos" / "modelos" / "rnnoise-sh.rnnn"
+URL_MODELO_RUIDO = ("https://raw.githubusercontent.com/GregorR/rnnoise-models/master/"
+                    "somnolent-hogwash-2018-09-01/sh.rnnn")
+
+
+# "melhorar_voz": menos embolado nos graves, mais presença, "s" mais macio, volume mais estável
+VOZ = ("equalizer=f=200:t=q:w=1.0:g=-2.5,equalizer=f=3000:t=q:w=1.2:g=2.5,deesser=i=0.45,"
+       "acompressor=threshold=0.1:ratio=2.5:attack=8:release=160:makeup=1.3,alimiter=limit=0.95")
+
+
+def _filtro_limpar_som(melhorar_voz=False, forte=False):
+    """Tira ruído de fundo (ventilador, rua, chiado) sem mexer no volume da voz.
+    RNNoise (rede treinada em fala) quando o modelo baixa; senão, o filtro de ruído do ffmpeg.
+    forte=True ("limpar_som": "forte"): gravação baixa com ronco de rua/ventilador. RNNoise
+    inteiro + um segundo passe espectral; nas pausas o ruído cai uns 23 dB e o fim fraco das
+    palavras fica igual (medido no episódio 4)."""
+    if not MODELO_RUIDO.exists():
+        try:
+            MODELO_RUIDO.parent.mkdir(parents=True, exist_ok=True)
+            from .base import rodar
+            rodar(["curl", "-sSLf", "-o", str(MODELO_RUIDO), URL_MODELO_RUIDO])
+        except Exception:
+            pass
+    extra = "," + VOZ if melhorar_voz else ""
+    if MODELO_RUIDO.exists():
+        if forte:
+            return (f"highpass=f=90,lowpass=f=14000,arnndn=m={MODELO_RUIDO}:mix=1.0,"
+                    f"afftdn=nr=10:nf=-48:tn=1{extra}")
+        return f"highpass=f=75,arnndn=m={MODELO_RUIDO}:mix=0.85{extra}"
+    return f"highpass=f=75,afftdn=nr=14:nf=-42:tn=1{extra}"
+
+
 def montar(nome):
+    """Monta o corte.mp4 numa passada só: lê o original uma vez e fica com os quadros
+    dos trechos (rápido mesmo com centenas de cortes); o som é cortado à parte, com
+    emenda macia em cada corte."""
+    import wave
+
+    import numpy as np
+
     p = pasta(nome)
     ed = ler_edicao(nome)
     info = sondar(ed["original"])
@@ -220,8 +325,74 @@ def montar(nome):
     tmp.mkdir(exist_ok=True)
     for f in tmp.glob("*"):
         f.unlink()
-    vf = _filtro_video(info)
-    tarefas = [(i, sg, ed["original"], str(tmp / f"t{i:04d}"), vf, info["tem_som"])
+    L, A = tamanho(ed)
+    quadros = [(int(round(s * FPS)), int(round(e * FPS))) for s, e in segs]
+    expr = "+".join(f"between(n\\,{a}\\,{b - 1})" for a, b in quadros)
+    # "melhorar_imagem": tira o granulado, clareia um pouco, dá vida à cor e nitidez leve
+    melhora = (",hqdn3d=1.5:1.5:4:4,eq=contrast=1.07:brightness=0.03:saturation=1.10:gamma=1.05,"
+               "colorbalance=rs=-0.02:bs=0.02:rm=-0.02:bm=0.01,unsharp=5:5:0.4:5:5:0"
+               if ed.get("melhorar_imagem") else "")
+    (tmp / "filtro.txt").write_text(
+        f"fps={FPS},select={expr},setpts=N/{FPS}/TB,"
+        f"scale={L}:{A}:force_original_aspect_ratio=increase,crop={L}:{A}{melhora},setsar=1,format=yuv420p")
+    ffmpeg("-i", ed["original"], "-map", "0:v:0", "-filter_script:v", tmp / "filtro.txt", "-an",
+           "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-g", "30", "-fps_mode", "passthrough",
+           "-video_track_timescale", "15360", tmp / "video.mp4")
+    total = sum(b - a for a, b in quadros)
+    sr = 48000
+    fades = ed["corte"].get("fades") or []
+    if len(fades) != len(segs):
+        fades = [[0.01, 0.01]] * len(segs)
+    if info["tem_som"]:
+        bruto = tmp / "som_original.wav"
+        limpeza = (["-af", _filtro_limpar_som(ed.get("melhorar_voz", False), ed.get("limpar_som") == "forte")]
+                   if ed.get("limpar_som") or ed.get("melhorar_voz") else [])
+        ffmpeg("-i", ed["original"], "-map", "0:a:0", "-vn", *limpeza, "-ac", 2, "-ar", sr,
+               "-c:a", "pcm_s16le", bruto)
+        with wave.open(str(bruto), "rb") as f:
+            som = np.frombuffer(f.readframes(f.getnframes()), np.int16).reshape(-1, 2)
+        partes = []
+        for (a, b), (fi, fo) in zip(quadros, fades):
+            i0, n = a * sr // FPS, (b - a) * sr // FPS
+            x = som[i0:i0 + n].astype(np.float32)
+            if len(x) < n:
+                x = np.concatenate([x, np.zeros((n - len(x), 2), np.float32)])
+            ni, no = max(1, int(fi * sr)), max(1, int(fo * sr))
+            x[:ni] *= np.linspace(0, 1, ni)[:, None]
+            x[-no:] *= np.linspace(1, 0, no)[:, None]
+            partes.append(x)
+        mix = np.concatenate(partes).clip(-32768, 32767).astype(np.int16)
+        bruto.unlink()
+    else:
+        mix = np.zeros((total * sr // FPS, 2), np.int16)
+    with wave.open(str(tmp / "audio.wav"), "wb") as f:
+        f.setnchannels(2)
+        f.setsampwidth(2)
+        f.setframerate(sr)
+        f.writeframes(mix.tobytes())
+    ffmpeg("-i", tmp / "video.mp4", "-i", tmp / "audio.wav", "-map", "0:v", "-map", "1:a",
+           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", p / "corte.mp4")
+    _transcricao_do_corte(nome, segs)
+    for f in tmp.glob("*"):
+        f.unlink()
+    return sondar(p / "corte.mp4")["duracao"]
+
+
+def montar_por_trechos(nome):
+    """Jeito antigo (um ffmpeg por trecho). Fica pra comparar, se precisar."""
+    p = pasta(nome)
+    ed = ler_edicao(nome)
+    info = sondar(ed["original"])
+    segs = ed["corte"]["segmentos"]
+    tmp = p / "trechos"
+    tmp.mkdir(exist_ok=True)
+    for f in tmp.glob("*"):
+        f.unlink()
+    vf = _filtro_video(info, ed)
+    fades = ed["corte"].get("fades") or [[0.01, 0.01]] * len(segs)
+    if len(fades) != len(segs):
+        fades = [[0.01, 0.01]] * len(segs)
+    tarefas = [(i, sg, ed["original"], str(tmp / f"t{i:04d}"), vf, info["tem_som"], tuple(fades[i]))
                for i, sg in enumerate(segs)]
     with ThreadPoolExecutor(2) as ex:
         bases = list(ex.map(_extrair, tarefas))
@@ -244,19 +415,25 @@ def _transcricao_do_corte(nome, segs):
     mapa = corte_para_original(segs)
     out = []
     for i, w in enumerate(palavras):
-        if i not in manter:
+        if i not in manter or not w["w"].strip():
             continue
+        ws_, we_ = w["s"], w["e"]
+        if we_ - ws_ < 0.08:                   # palavra de tempo quase zero: dá uns 0,12 s pra ela
+            ws_, we_ = ws_ - 0.02, ws_ + 0.12
         # o trecho com maior sobreposição fica com a palavra (o whisper erra as bordas)
         melhor, sob = None, 0.0
         for a, b, s in mapa:
             e = s + (b - a)
-            o = min(e, w["e"]) - max(s, w["s"])
+            o = min(e, we_) - max(s, ws_)
             if o > sob:
                 melhor, sob = (a, b, s), o
-        if melhor and sob >= min(0.06, 0.3 * (w["e"] - w["s"])):
+        if melhor and sob >= min(0.06, 0.3 * (we_ - ws_)):
             a, b, s = melhor
-            out.append({"w": w["w"], "s": round(max(a, a + w["s"] - s), 3),
-                        "e": round(min(b, a + w["e"] - s), 3)})
+            ini, fim = max(a, a + ws_ - s), min(b, a + we_ - s)
+            partes = w["w"].split()
+            passo = (fim - ini) / len(partes)
+            for k, pt in enumerate(partes):        # "E obviamente" -> duas palavras na legenda
+                out.append({"w": pt, "s": round(ini + k * passo, 3), "e": round(ini + (k + 1) * passo, 3)})
     (p / "transcricao_corte.json").write_text(json.dumps(out, ensure_ascii=False, indent=1))
     # emendas: pro zoom e pra não pôr animação em cima do pulo
     (p / "emendas.json").write_text(json.dumps([round(a, 3) for a, _, _ in mapa][1:]))
